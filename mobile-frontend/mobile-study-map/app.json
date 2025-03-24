@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+    "NSLocationWhenInUseUsageDescription": "Your app uses location to determine distances.",
+    "NSLocationAlwaysUsageDescription": "Your app uses location to determine distances even when not in use."
+  }
     },
     "android": {
       "adaptiveIcon": {
@@ -32,7 +36,11 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      ["expo-location", {
+        "isIosBackgroundLocationEnabled": true,
+        "isAndroidBackgroundLocationEnabled": true
+      }]
     ],
     "experiments": {
       "typedRoutes": true

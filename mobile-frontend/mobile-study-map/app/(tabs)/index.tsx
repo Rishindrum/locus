@@ -5,12 +5,43 @@ import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
+//For own location
+import * as Location from 'expo-location';
+import { useEffect, useState } from 'react';
+
 // Import from Meli
 import MapView, { Callout, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import React = require('react');
 
 
 export default function HomeScreen() {
+  const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28448, longitude: -97.74222 });
+
+  const markers = [
+    { id: 1, coordinate: { latitude: 30.28639, longitude: 97.73667 } },
+    { id: 2, coordinate: { latitude: 30.29167, longitude: 97.73972 } },
+    // replace with function to get the markers
+  ];
+
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to access location was denied');
+        return;
+      }
+      // If permissions are granted, fetch the location
+      const location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
+    } catch (error) {
+      console.error('Error requesting location permission:', error);
+    }
+  };
+
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+  
   return (
 
     <View style={styles.generalMap}>
@@ -26,6 +57,184 @@ export default function HomeScreen() {
               latitudeDelta: 0.020,
               longitudeDelta: 0.010,
             }}>
+
+            {/* Current Location */}
+            {currentLocation &&
+              <Marker
+                coordinate={currentLocation}>
+                <Image 
+                  source={require('../../assets/images/marker_S.png')}
+                  style={{ width: 50, height: 50 }} 
+                />
+                {/* <View>
+                  <Text>Current Location</Text>
+                </View> */}
+              </Marker>
+      }
+
+            {/* Markers */}
+
+            
+            {/* Sarah Marker */}
+            <Marker
+              coordinate={{
+                latitude: 30.28463,
+                longitude: -97.74184,
+              }}>
+              <Image 
+                  source={require('../../assets/images/marker_S.png')}
+                  style={{ width: 50, height: 50 }} 
+              />
+            </Marker>
+
+            {/* Faith Marker */}
+            <Marker
+              coordinate={{
+                latitude: 30.28657,
+                longitude: -97.74364,
+              }}
+              >
+              <Image 
+                source={require('../../assets/images/marker_F.png')}
+                style={{width: 50, height: 50}}
+              />
+            </Marker>
+
+
+            {/* Holly Marker */}
+            <Marker
+              coordinate={{
+                latitude: 30.28619,
+                longitude: -97.74327,
+              }}>
+              
+              <Image 
+                source={require('../../assets/images/marker_H.png')}
+                style={{width: 50, height: 50}}
+              />
+            </Marker>
+
+            {/* Grayson Marker */}
+            <Marker
+              coordinate={{
+                latitude: 30.29087,
+                longitude: -97.74368,
+              }}
+              >
+              <Image 
+                source={require('../../assets/images/marker_G.png')}
+                style={{width: 50, height: 50}}
+              />
+            </Marker>
+
+            {/* Krithi Marker */}
+            <Marker
+              coordinate={{
+                latitude: 30.2886,
+                longitude: -97.74167,
+              }}>
+              
+              <Image 
+                source={require('../../assets/images/marker_K.png')}
+                style={{width: 50, height: 50}}
+              />
+            </Marker>
+
+            {/* Locations */}
+
+            {/* GDC*/}
+            <Marker
+              coordinate={{
+                latitude: 30.28639,
+                longitude: -97.73667,
+              }}>
+              
+              {/* <Image 
+                source={require('../../assets/images/image.png')}
+                style={{width: 100, height: 100}}
+              /> */}
+            </Marker>
+
+            {/* Welch*/}
+            <Marker
+              coordinate={{
+                latitude: 30.29167,
+                longitude: -97.73872,
+              }}>
+              
+              {/* <Image 
+                source={require('../../assets/images/marker_K.png')}
+                style={{width: 100, height: 100}}
+              /> */}
+            </Marker>
+
+            {/* Robert B. Rowling Hall*/}
+            <Marker
+              coordinate={{
+                latitude: 30.28222,
+                longitude: -97.74139,
+              }}>
+              
+              {/* <Image 
+                source={require('../../assets/images/marker_K.png')}
+                style={{width: 100, height: 100}}
+              /> */}
+            </Marker>
+
+            {/* EER*/}
+            <Marker
+              coordinate={{
+                latitude: 30.28417,
+                longitude: -97.73611,
+              }}>
+              
+              {/* <Image 
+                source={require('../../assets/images/marker_K.png')}
+                style={{width: 100, height: 100}}
+              /> */}
+            </Marker>
+
+            {/* FAC*/}
+            <Marker
+              coordinate={{
+                latitude: 30.28528,
+                longitude: -97.73972,
+              }}>
+              
+              {/* <Image 
+                source={require('../../assets/images/marker_K.png')}
+                style={{width: 100, height: 100}}
+              /> */}
+            </Marker>
+
+            {/* Union*/}
+            <Marker
+              coordinate={{
+                latitude: 30.28333,
+                longitude: -97.73944,
+              }}>
+              
+              {/* <Image 
+                source={require('../../assets/images/marker_K.png')}
+                style={{width: 100, height: 100}}
+              /> */}
+            </Marker>
+
+            {/* PCL*/}
+            <Marker
+              coordinate={{
+                latitude: 30.28694,
+                longitude: -97.73944,
+              }}>
+              
+              {/* <Image 
+                source={require('../../assets/images/marker_K.png')}
+                style={{width: 100, height: 100}}
+              /> */}
+            </Marker>
+
+
+
           </MapView>
         </View>
     </View>
