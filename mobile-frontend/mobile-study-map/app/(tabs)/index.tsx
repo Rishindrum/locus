@@ -11,17 +11,45 @@ import { useEffect, useState } from 'react';
 
 // Import from Meli
 import MapView, { Callout, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import React = require('react');
+import React, {Text} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext'; // Importing the AuthContext for authentication
+import { getAllStudySpaces } from '@/backend/backendFunctions';
 
 
 export default function HomeScreen() {
   const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28448, longitude: -97.74222 });
+  const [studySpaceMarkers, setStudySpaceMarkers] = useState([]);
 
-  const markers = [
-    { id: 1, coordinate: { latitude: 30.28639, longitude: 97.73667 } },
-    { id: 2, coordinate: { latitude: 30.29167, longitude: 97.73972 } },
-    // replace with function to get the markers
-  ];
+  const {user} = useAuth(); // Get the current user from AuthContext
+
+  useEffect(() => {
+    const fetchStudySpaces = async () => {
+      try {
+        const spaces = await getAllStudySpaces();
+        const formattedMarkers = spaces.map((space) => ({
+          id: space.id,
+          coordinate: parseLocationString(space.location),
+          name: space.name,
+          address: space.address,
+        }));
+        setStudySpaceMarkers(formattedMarkers);
+      } catch (error) {
+        console.error('Error fetching study spaces:', error);
+      }
+    };
+
+    fetchStudySpaces();
+  }, []);
+
+  // Helper function to parse location string from Firestore
+  const parseLocationString = (locationStr) => {
+    const [lat, lng] = locationStr
+      .replace(/[\[\]]/g, '')
+      .split(',')
+      .map(Number);
+    return { latitude: lat, longitude: lng };
+  };
 
   const requestLocationPermission = async () => {
     try {
@@ -41,9 +69,10 @@ export default function HomeScreen() {
   useEffect(() => {
     requestLocationPermission();
   }, []);
+
+  console.log('Cur User:', user);
   
   return (
-
     <View style={styles.generalMap}>
         
         {/* Meli's Map */}
@@ -143,95 +172,112 @@ export default function HomeScreen() {
             {/* Locations */}
 
             {/* GDC*/}
-            <Marker
+            {/* <Marker
               coordinate={{
                 latitude: 30.28639,
                 longitude: -97.73667,
-              }}>
+              }}> */}
               
               {/* <Image 
                 source={require('../../assets/images/image.png')}
                 style={{width: 100, height: 100}}
               /> */}
-            </Marker>
+            {/* </Marker> */}
 
             {/* Welch*/}
-            <Marker
+            {/* <Marker
               coordinate={{
                 latitude: 30.29167,
                 longitude: -97.73872,
-              }}>
+              }}> */}
               
               {/* <Image 
                 source={require('../../assets/images/marker_K.png')}
                 style={{width: 100, height: 100}}
               /> */}
-            </Marker>
+            {/* </Marker> */}
 
             {/* Robert B. Rowling Hall*/}
-            <Marker
+            {/* <Marker
               coordinate={{
                 latitude: 30.28222,
                 longitude: -97.74139,
-              }}>
+              }}> */}
               
               {/* <Image 
                 source={require('../../assets/images/marker_K.png')}
                 style={{width: 100, height: 100}}
               /> */}
-            </Marker>
+            {/* </Marker> */}
 
             {/* EER*/}
-            <Marker
+            {/* <Marker
               coordinate={{
                 latitude: 30.28417,
                 longitude: -97.73611,
-              }}>
+              }}> */}
               
               {/* <Image 
                 source={require('../../assets/images/marker_K.png')}
                 style={{width: 100, height: 100}}
               /> */}
-            </Marker>
+            {/* </Marker> */}
 
             {/* FAC*/}
-            <Marker
+            {/* <Marker
               coordinate={{
                 latitude: 30.28528,
                 longitude: -97.73972,
-              }}>
+              }}> */}
               
               {/* <Image 
                 source={require('../../assets/images/marker_K.png')}
                 style={{width: 100, height: 100}}
               /> */}
-            </Marker>
+            {/* </Marker> */}
 
             {/* Union*/}
-            <Marker
+            {/* <Marker
               coordinate={{
                 latitude: 30.28333,
                 longitude: -97.73944,
-              }}>
+              }}> */}
               
               {/* <Image 
                 source={require('../../assets/images/marker_K.png')}
                 style={{width: 100, height: 100}}
               /> */}
-            </Marker>
+            {/* </Marker> */}
 
             {/* PCL*/}
-            <Marker
+            {/* <Marker
               coordinate={{
                 latitude: 30.28694,
                 longitude: -97.73944,
-              }}>
+              }}> */}
               
               {/* <Image 
                 source={require('../../assets/images/marker_K.png')}
                 style={{width: 100, height: 100}}
               /> */}
+            {/* </Marker> */}
+
+            {/* Study Space Markers from Firestore */}
+          {studySpaceMarkers.map((space) => (
+            <Marker
+              key={space.id}
+              coordinate={space.coordinate}
+              title={space.name}
+              description={space.address}
+            >
+              <Callout>
+                <View style={styles.callout}>
+                  <Text style={styles.calloutTitle}>{space.name}</Text>
+                  <Text>{space.address}</Text>
+                </View>
+              </Callout>
             </Marker>
+          ))}
 
 
 
@@ -310,6 +356,15 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  callout: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    maxWidth: 200,
+  },
+  calloutTitle: {
+    fontWeight: 'bold',
+    marginBottom: 5,
   },
   map: {
     width: '100%',
