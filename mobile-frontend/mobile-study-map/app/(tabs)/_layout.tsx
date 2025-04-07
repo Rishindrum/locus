@@ -8,11 +8,18 @@ import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Dimensions } from 'react-native';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import LoginScreen from '../login';
 
 const { width } = Dimensions.get('window'); // Get screen width
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const {user} = useAuth(); // Get user from AuthContext
+
+  if (!user) {
+    return <LoginScreen />; // Show login screen if user is not authenticated
+  }
 
   return (
     <Tabs

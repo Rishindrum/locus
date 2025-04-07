@@ -55,13 +55,7 @@ function AppNavigator() {
 
   return (
     <Stack>
-      {user ? (
-        // Navigate to tabs (index.tsx) if authenticated
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      ) : (
-        // Navigate to login if not authenticated
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-      )}
     </Stack>
   );
 }
