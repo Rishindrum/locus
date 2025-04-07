@@ -1,6 +1,9 @@
 import { View, Text, StyleSheet, Button } from 'react-native';
 
 import { useRouter } from 'expo-router';
+import React from 'react';
+import { useAuth } from '@/contexts/AuthContext'; // Importing the AuthContext for authentication
+import { createStudySpace } from '@/backend/backendFunctions';
 
 export default function SavedScreen() {
 
@@ -20,6 +23,13 @@ export default function SavedScreen() {
       <Button
         title="Start a Session"
         onPress={() => router.push('/startsession')} // Navigate to Ratings page
+      />
+
+      {/* New button to add a study space */}
+      <Button
+        title="Add New Study Space"
+        onPress={() => router.push('/addspace')}
+        color="#4CAF50"
       />
 
     </View>
