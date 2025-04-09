@@ -1,4 +1,4 @@
-import { Text, Image, StyleSheet, Platform, View } from 'react-native';
+import React, { Text, Image, StyleSheet, Platform, View } from 'react-native';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -12,16 +12,46 @@ import { useEffect, useState } from 'react';
 // For map
 import MapView, { Callout, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
+// For backend
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext'; // Importing the AuthContext for authentication
+import { getAllStudySpaces } from '@/backend/backendFunctions';
+
 
 export default function HomeScreen() {
 
   const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28448, longitude: -97.74222 });
+  const [studySpaceMarkers, setStudySpaceMarkers] = useState([]);
 
-  const markers = [
-    { id: 1, coordinate: { latitude: 30.28639, longitude: 97.73667 } },
-    { id: 2, coordinate: { latitude: 30.29167, longitude: 97.73972 } },
-    // replace with function to get the markers
-  ];
+  const {user} = useAuth(); // Get the current user from AuthContext
+
+  useEffect(() => {
+    const fetchStudySpaces = async () => {
+      try {
+        const spaces = await getAllStudySpaces();
+        const formattedMarkers = spaces.map((space) => ({
+          id: space.id,
+          coordinate: parseLocationString(space.location),
+          name: space.name,
+          address: space.address,
+        }));
+        setStudySpaceMarkers(formattedMarkers);
+      } catch (error) {
+        console.error('Error fetching study spaces:', error);
+      }
+    };
+
+    fetchStudySpaces();
+  }, []);
+
+  // Helper function to parse location string from Firestore
+  const parseLocationString = (locationStr) => {
+    const [lat, lng] = locationStr
+      .replace(/[\[\]]/g, '')
+      .split(',')
+      .map(Number);
+    return { latitude: lat, longitude: lng };
+  };
 
   const requestLocationPermission = async () => {
     try {
@@ -41,9 +71,10 @@ export default function HomeScreen() {
   useEffect(() => {
     requestLocationPermission();
   }, []);
+
+  console.log('Cur User:', user);
   
   return (
-
     <View style={styles.generalMap}>
         
         {/* Meli's Map */}
@@ -69,8 +100,7 @@ export default function HomeScreen() {
                   <Text>Current Location</Text>
                 </View>
               </Marker>
-      }
-
+            }
           </MapView>
         </View>
     </View>
@@ -101,6 +131,15 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  callout: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    maxWidth: 200,
+  },
+  calloutTitle: {
+    fontWeight: 'bold',
+    marginBottom: 5,
   },
   map: {
     width: '100%',

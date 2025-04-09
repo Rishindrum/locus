@@ -16,7 +16,7 @@ const FEATURES = [
     'Wifi Quality',
   ];
 
-export default function SettingsScreen() {
+export default function PreferredFeaturesScreen() {
 
     const router = useRouter();
 

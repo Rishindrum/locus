@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Object } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
 
 interface SmallCardProps {
     name: string, 

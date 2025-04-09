@@ -7,9 +7,16 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Dimensions } from 'react-native';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import LoginScreen from '../login';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const {user} = useAuth(); // Get user from AuthContext
+
+  if (!user) {
+    return <LoginScreen />; // Show login screen if user is not authenticated
+  }
 
   return (
     <Tabs
@@ -54,6 +61,13 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="saved"
+        options={{
+          title: 'Testing',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape" color={color} />,
         }}
       />
 

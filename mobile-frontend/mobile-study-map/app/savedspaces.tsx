@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 
-export default function SettingsScreen() {
+export default function SavedSpacesScreen() {
 
     const router = useRouter();
 
@@ -18,8 +18,6 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
                 <Text style={styles.titleText}>Saved Spaces</Text>
             </View>
-
-            {/* Container for the multi-select for features */}
 
         </View>
   );

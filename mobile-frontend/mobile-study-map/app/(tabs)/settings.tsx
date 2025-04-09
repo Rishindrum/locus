@@ -1,9 +1,18 @@
-import { View, Image, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Image, Text, StyleSheet, TouchableOpacity, Button } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
+import React from 'react';
 
 export default function SettingsScreen() {
 
   const router = useRouter();
+
+  const { logout } = useAuth();
+
+  const handleSignOut = () => {
+    logout();
+    router.replace('/login');
+  };
 
   return (
     <View style={styles.container}>
@@ -62,7 +71,7 @@ export default function SettingsScreen() {
       {/* Button to logout */}
       <TouchableOpacity 
         style={styles.settingsButton}
-        /* TODO: onPress = logout function here */
+        onPress={handleSignOut}
       >
       <View style={styles.buttonContent}> 
           <Text style={styles.buttonText}>Logout</Text>
@@ -74,7 +83,7 @@ export default function SettingsScreen() {
       </TouchableOpacity>
 
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
