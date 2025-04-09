@@ -72,7 +72,7 @@ export default function HomeScreen() {
     requestLocationPermission();
   }, []);
 
-  console.log('Cur User:', user);
+  // console.log('Cur User:', user);
   
   return (
     <View style={styles.generalMap}>
@@ -101,6 +101,23 @@ export default function HomeScreen() {
                 </View>
               </Marker>
             }
+
+             {/* Study Space Markers from Firestore */}
+          {studySpaceMarkers.map((space) => (
+            <Marker
+              key={space.id}
+              coordinate={space.coordinate}
+              title={space.name}
+              description={space.address}
+            >
+              <Callout>
+                <View style={styles.callout}>
+                  <Text style={styles.calloutTitle}>{space.name}</Text>
+                  <Text>{space.address}</Text>
+                </View>
+              </Callout>
+            </Marker>
+          ))}
           </MapView>
         </View>
     </View>

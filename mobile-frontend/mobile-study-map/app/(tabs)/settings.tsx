@@ -7,12 +7,16 @@ export default function SettingsScreen() {
 
   const router = useRouter();
 
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+
+  const name = user.displayName || user.email.split('@')[0]; // Fallback to email if displayName is not available
 
   const handleSignOut = () => {
     logout();
     router.replace('/login');
   };
+
+  console.log(user); // Check if user is defined and has the expected properties
 
   return (
     <View style={styles.container}>
@@ -22,7 +26,7 @@ export default function SettingsScreen() {
         style={styles.pfp} 
       />
 
-      <Text style={styles.titleText}> My Settings </Text>
+      <Text style={styles.titleText}>{name}'s Settings </Text>
 
       {/* Three buttons: preferences, saved spaces, and log out */}
 
