@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 
 const studyOptions = ["Individual", "Quiet Group", "Collaborative Group"];
+const studyOptionDescriptions = [];
 
 export default function StartSession() {
 
@@ -63,8 +64,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFBF5', // You can modify this for dark mode
   },
   text: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: "#062F48",
   },
 
   optionsContainer: {

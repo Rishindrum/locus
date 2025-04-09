@@ -17,7 +17,7 @@ const RatingSlider = ({ label, value, lowestLabel, highestLabel, onValueChange }
       onValueChange={onValueChange}
       minimumTrackTintColor="#DC8B47"
       maximumTrackTintColor="#ccc"
-      thumbImage={require('../assets/images/orangesliderdot.png')} // Custom small image
+      thumbImage={require('../../assets/images/orangesliderdot.png')} // Custom small image
     />
 
     {/* Labels for the ends */}
@@ -199,6 +199,8 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: "#062F48",
+    marginTop: 40,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -251,6 +253,7 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: '#DC8B47',
     padding: 15,
+    marginBottom: 70,
     borderRadius: 10,
     alignItems: 'center',
   },

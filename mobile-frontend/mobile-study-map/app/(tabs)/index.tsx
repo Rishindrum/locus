@@ -1,20 +1,20 @@
-import { Image, StyleSheet, Platform, View } from 'react-native';
+import { Text, Image, StyleSheet, Platform, View } from 'react-native';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
-//For own location
+// For geolocation
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
 
-// Import from Meli
+// For map
 import MapView, { Callout, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import React = require('react');
 
 
 export default function HomeScreen() {
+
   const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28448, longitude: -97.74222 });
 
   const markers = [
@@ -50,7 +50,6 @@ export default function HomeScreen() {
         <View style={styles.container}>
           <MapView
             style={styles.map}
-            // provider={PROVIDER_GOOGLE}
             initialRegion={{
               latitude: 30.28448,
               longitude: -97.74222,
@@ -66,223 +65,15 @@ export default function HomeScreen() {
                   source={require('../../assets/images/marker_S.png')}
                   style={{ width: 50, height: 50 }} 
                 />
-                {/* <View>
+                <View>
                   <Text>Current Location</Text>
-                </View> */}
+                </View>
               </Marker>
       }
-
-            {/* Markers */}
-
-            
-            {/* Sarah Marker */}
-            <Marker
-              coordinate={{
-                latitude: 30.28463,
-                longitude: -97.74184,
-              }}>
-              <Image 
-                  source={require('../../assets/images/marker_S.png')}
-                  style={{ width: 50, height: 50 }} 
-              />
-            </Marker>
-
-            {/* Faith Marker */}
-            <Marker
-              coordinate={{
-                latitude: 30.28657,
-                longitude: -97.74364,
-              }}
-              >
-              <Image 
-                source={require('../../assets/images/marker_F.png')}
-                style={{width: 50, height: 50}}
-              />
-            </Marker>
-
-
-            {/* Holly Marker */}
-            <Marker
-              coordinate={{
-                latitude: 30.28619,
-                longitude: -97.74327,
-              }}>
-              
-              <Image 
-                source={require('../../assets/images/marker_H.png')}
-                style={{width: 50, height: 50}}
-              />
-            </Marker>
-
-            {/* Grayson Marker */}
-            <Marker
-              coordinate={{
-                latitude: 30.29087,
-                longitude: -97.74368,
-              }}
-              >
-              <Image 
-                source={require('../../assets/images/marker_G.png')}
-                style={{width: 50, height: 50}}
-              />
-            </Marker>
-
-            {/* Krithi Marker */}
-            <Marker
-              coordinate={{
-                latitude: 30.2886,
-                longitude: -97.74167,
-              }}>
-              
-              <Image 
-                source={require('../../assets/images/marker_K.png')}
-                style={{width: 50, height: 50}}
-              />
-            </Marker>
-
-            {/* Locations */}
-
-            {/* GDC*/}
-            <Marker
-              coordinate={{
-                latitude: 30.28639,
-                longitude: -97.73667,
-              }}>
-              
-              {/* <Image 
-                source={require('../../assets/images/image.png')}
-                style={{width: 100, height: 100}}
-              /> */}
-            </Marker>
-
-            {/* Welch*/}
-            <Marker
-              coordinate={{
-                latitude: 30.29167,
-                longitude: -97.73872,
-              }}>
-              
-              {/* <Image 
-                source={require('../../assets/images/marker_K.png')}
-                style={{width: 100, height: 100}}
-              /> */}
-            </Marker>
-
-            {/* Robert B. Rowling Hall*/}
-            <Marker
-              coordinate={{
-                latitude: 30.28222,
-                longitude: -97.74139,
-              }}>
-              
-              {/* <Image 
-                source={require('../../assets/images/marker_K.png')}
-                style={{width: 100, height: 100}}
-              /> */}
-            </Marker>
-
-            {/* EER*/}
-            <Marker
-              coordinate={{
-                latitude: 30.28417,
-                longitude: -97.73611,
-              }}>
-              
-              {/* <Image 
-                source={require('../../assets/images/marker_K.png')}
-                style={{width: 100, height: 100}}
-              /> */}
-            </Marker>
-
-            {/* FAC*/}
-            <Marker
-              coordinate={{
-                latitude: 30.28528,
-                longitude: -97.73972,
-              }}>
-              
-              {/* <Image 
-                source={require('../../assets/images/marker_K.png')}
-                style={{width: 100, height: 100}}
-              /> */}
-            </Marker>
-
-            {/* Union*/}
-            <Marker
-              coordinate={{
-                latitude: 30.28333,
-                longitude: -97.73944,
-              }}>
-              
-              {/* <Image 
-                source={require('../../assets/images/marker_K.png')}
-                style={{width: 100, height: 100}}
-              /> */}
-            </Marker>
-
-            {/* PCL*/}
-            <Marker
-              coordinate={{
-                latitude: 30.28694,
-                longitude: -97.73944,
-              }}>
-              
-              {/* <Image 
-                source={require('../../assets/images/marker_K.png')}
-                style={{width: 100, height: 100}}
-              /> */}
-            </Marker>
-
-
 
           </MapView>
         </View>
     </View>
-
-    // <ParallaxScrollView
-    //   headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-    //   headerImage={
-    //     <Image
-    //       source={require('@/assets/images/partial-react-logo.png')}
-    //       style={styles.reactLogo}
-    //     />
-    //   }>
-    //   <ThemedView style={styles.titleContainer}>
-    //     <ThemedText type="title">Welcome!</ThemedText>
-    //     <HelloWave />
-    //   </ThemedView>
-    //   <ThemedView style={styles.stepContainer}>
-    //     <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-    //     <ThemedText>
-    //       Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-    //       Press{' '}
-    //       <ThemedText type="defaultSemiBold">
-    //         {Platform.select({
-    //           ios: 'cmd + d',
-    //           android: 'cmd + m',
-    //           web: 'F12'
-    //         })}
-    //       </ThemedText>{' '}
-    //       to open developer tools.
-    //     </ThemedText>
-    //   </ThemedView>
-    //   <ThemedView style={styles.stepContainer}>
-    //     <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-    //     <ThemedText>
-    //       Tap the Explore tab to learn more about what's included in this starter app.
-    //     </ThemedText>
-    //   </ThemedView>
-    //   <ThemedView style={styles.stepContainer}>
-    //     <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-    //     <ThemedText>
-    //       When you're ready, run{' '}
-    //       <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-    //       <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-    //       <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-    //       <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-    //     </ThemedText>
-    //   </ThemedView>
-    // </ParallaxScrollView>
   );
 }
 

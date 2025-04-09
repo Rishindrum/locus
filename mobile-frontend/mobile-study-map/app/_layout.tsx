@@ -30,8 +30,25 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+
+        {/* All pages under (tabs) handled here */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
+        
+        {/* Added a screen per other external page */}
+        <Stack.Screen
+          name="preferredfeatures"
+          options={{ headerShown: false }} // Removes the header
+        />
+        <Stack.Screen
+          name="savedspaces"
+          options={{ headerShown: false }} // Removes the header
+        />
+        <Stack.Screen
+          name="studylog"
+          options={{ headerShown: false }} // Removes the header
+        />
+        
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
