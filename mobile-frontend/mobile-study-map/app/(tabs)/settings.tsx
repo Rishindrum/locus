@@ -28,7 +28,7 @@ export default function SettingsScreen() {
 
       <Text style={styles.titleText}>{name}'s Settings </Text>
 
-      {/* Three buttons: preferences, saved spaces, and log out */}
+      {/* four buttons: preferences, saved spaces, following, and log out */}
 
       {/* Button going to preferred features */}
       <TouchableOpacity 
@@ -65,6 +65,20 @@ export default function SettingsScreen() {
       >
         <View style={styles.buttonContent}> 
           <Text style={styles.buttonText}>Study Log</Text>
+          <Image
+            source={require('../../assets/images/arrow_forward.png')}
+            style={styles.arrowIcon} 
+          />
+        </View>
+      </TouchableOpacity>
+
+      {/* Button going to following */}
+      <TouchableOpacity 
+        style={styles.settingsButton}
+        onPress={() => router.push('/follow')}
+      >
+        <View style={styles.buttonContent}> 
+          <Text style={styles.buttonText}>Following</Text>
           <Image
             source={require('../../assets/images/arrow_forward.png')}
             style={styles.arrowIcon} 

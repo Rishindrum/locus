@@ -43,13 +43,13 @@ export const updateUserProfile = async (userId, userData) => {
     await updateDoc(doc(db, "users", userId), userData);
     return { success: true };
   } catch (error) {
-    console.error("Error updating user:", error);
+    console.error("Error updating user:", error); 
     throw error;
   }
 };
 
 // Add/Remove saved space for user
-export const toggleSavedSpace = async (userId, spaceId, isSaving = true) => {
+export const toggleSavedSpace = async (userId: string, spaceId: string, isSaving = true) => {
   try {
     const userRef = doc(db, "users", userId);
     if (isSaving) {
@@ -69,7 +69,7 @@ export const toggleSavedSpace = async (userId, spaceId, isSaving = true) => {
 };
 
 // Follow/Unfollow a user
-export const toggleFollowUser = async (userId, targetUserId, isFollowing = true) => {
+export const toggleFollowUser = async (userId: string, targetUserId: string, isFollowing = true) => {
   try {
     const batch = writeBatch(db);
     const userRef = doc(db, "users", userId);
@@ -87,6 +87,23 @@ export const toggleFollowUser = async (userId, targetUserId, isFollowing = true)
     return { success: true };
   } catch (error) {
     console.error("Error updating follow status:", error);
+    throw error;
+  }
+};
+
+// Fetch all users except the current user
+export const fetchAllUsersExceptCurrent = async (currentUserId: string) => {
+  try {
+    const usersCollection = collection(db, 'users');
+    const q = query(usersCollection, where('userId', '!=', currentUserId));
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error('Error fetching users:', error);
     throw error;
   }
 };
@@ -165,6 +182,18 @@ export const updateStudySpace = async (spaceId, spaceData) => {
 
 // ===== SESSION FUNCTIONS =====
 
+interface SessionData {
+  id: string;
+  description: string;
+  sessionType: string;
+  spaceId: string;
+  userId: string;
+  users: string[];
+  isActive: boolean;
+  startTime: Date;
+  endTime: Date | null;
+}
+
 // Get all sessions for a user
 export const getUserSessions = async (userId) => {
   try {
@@ -231,15 +260,104 @@ export const updateSession = async (sessionId, sessionData) => {
 };
 
 // End a session
-export const endSession = async (sessionId) => {
+export const endSession = async (sessionId: string): Promise<boolean> => {
   try {
-    await updateDoc(doc(db, "sessions", sessionId), {
+    const sessionRef = doc(db, 'sessions', sessionId);
+    await updateDoc(sessionRef, {
       isActive: false,
-      endTime: new Date().toISOString()
+      endTime: new Date()
     });
-    return { success: true };
+    return true;
   } catch (error) {
-    console.error("Error ending session:", error);
+    console.error('Error ending session:', error);
+    return false;
+  }
+};
+
+// Leave a session
+export const leaveSession = async (sessionId: string, userId: string): Promise<boolean> => {
+  try {
+    const sessionRef = doc(db, 'sessions', sessionId);
+    const sessionDoc = await getDoc(sessionRef);
+    
+    if (!sessionDoc.exists()) {
+      throw new Error('Session not found');
+    }
+
+    const sessionData = sessionDoc.data() as SessionData;
+    const updatedUsers = sessionData.users.filter(id => id !== userId);
+
+    if (updatedUsers.length === 0) {
+      // If no users left, end the session
+      await updateDoc(sessionRef, {
+        isActive: false,
+        endTime: new Date(),
+        users: updatedUsers
+      });
+    } else {
+      // Otherwise just remove the user
+      await updateDoc(sessionRef, {
+        users: updatedUsers
+      });
+    }
+    return true;
+  } catch (error) {
+    console.error('Error leaving session:', error);
+    return false;
+  }
+};
+
+// Get user's active session
+export const getUserActiveSession = async (userId: string): Promise<SessionData | null> => {
+  try {
+    const sessionsRef = collection(db, 'sessions');
+    const q = query(
+      sessionsRef,
+      where('users', 'array-contains', userId),
+      where('isActive', '==', true)
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    
+    const sessionDoc = snapshot.docs[0];
+    return { id: sessionDoc.id, ...sessionDoc.data() as SessionData };
+  } catch (error) {
+    console.error('Error getting user active session:', error);
+    return null;
+  }
+};
+
+// Join a session
+export const joinSession = async (sessionId: string, userId: string): Promise<boolean> => {
+  try {
+    // Check if user is already in an active session
+    const activeSession = await getUserActiveSession(userId);
+    if (activeSession) {
+      if (activeSession.id === sessionId) {
+        throw new Error('You are already in this session');
+      }
+      // Leave current session first
+      await leaveSession(activeSession.id, userId);
+    }
+
+    const sessionRef = doc(db, 'sessions', sessionId);
+    const sessionDoc = await getDoc(sessionRef);
+    
+    if (!sessionDoc.exists()) {
+      throw new Error('Session not found');
+    }
+
+    const sessionData = sessionDoc.data() as SessionData;
+    if (!sessionData.isActive) {
+      throw new Error('Session is no longer active');
+    }
+
+    await updateDoc(sessionRef, {
+      users: arrayUnion(userId)
+    });
+    return true;
+  } catch (error) {
+    console.error('Error joining session:', error);
     throw error;
   }
 };
