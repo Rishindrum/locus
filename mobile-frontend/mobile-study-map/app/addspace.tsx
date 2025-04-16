@@ -155,14 +155,12 @@ export default function AddSpaceScreen() {
           value={latitude}
           onChangeText={setLatitude}
           placeholder="Latitude"
-          keyboardType="numeric"
         />
         <TextInput
           style={[styles.input, styles.halfInput]}
           value={longitude}
           onChangeText={setLongitude}
           placeholder="Longitude"
-          keyboardType="numeric"
         />
       </View>
       

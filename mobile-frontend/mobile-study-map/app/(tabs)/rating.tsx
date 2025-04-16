@@ -1,6 +1,22 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import Slider from '@react-native-community/slider';
+import DropDownPicker from 'react-native-dropdown-picker';
+
+
+// For Study Space Drop Down Selection
+type StudySpace = {
+  label: string;
+  value: string;
+};
+
+const studySpaces: StudySpace[] = [
+  { label: 'PCL', value: '1' },
+  { label: 'Welch', value: '2' },
+  { label: 'NRG Productivity Center', value: '3' },
+  { label: 'Gates Dell Complex', value: '4' },
+  { label: 'Moody (DMC)', value: '5' },
+];
 
 
 // Custom Slider Component
@@ -65,6 +81,11 @@ const CategorySelection = ({ id, label, options, selected, onValueChange }) => (
 
 const RatingForm = () => {
 
+  // Set up selected study space
+  const [open, setOpen] = useState(false);
+  const [selectedValue, setSelectedValue] = useState<string | null>(null);
+  const [items, setItems] = useState(studySpaces);
+
   // Set up sliders' states
   const [sliders, setSliders] = useState({
     noiseLevel: 2,
@@ -100,9 +121,23 @@ const RatingForm = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
+
     <View style={styles.formContainer}>
 
       <Text style={styles.heading}>Rate the Study Space</Text>
+
+      <DropDownPicker
+        open={open}
+        value={selectedValue}
+        items={items}
+        setOpen={setOpen}
+        setValue={setSelectedValue}
+        setItems={setItems}
+        placeholder="Choose a study space"
+        containerStyle={{ marginBottom: open ? (items.length) * 25 : 20 }} // prevent clipping when open
+        style={styles.dropdown}
+        dropDownContainerStyle={styles.dropdownContainer}
+      />
 
       {/* Sliders */}
       <RatingSlider
@@ -273,6 +308,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginTop: 10,
     marginBottom: 30,
+  },
+
+  dropdown: {
+    borderColor: '#DC8B47',
+    borderRadius: 10,
+  },
+  dropdownContainer: {
+    borderColor: '#DC8B47',
   },
 });
 

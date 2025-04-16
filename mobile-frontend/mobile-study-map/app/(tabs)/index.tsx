@@ -1,16 +1,21 @@
-import React, { Text, Image, StyleSheet, Platform, View } from 'react-native';
+import React, { Text, ScrollView, Image, StyleSheet, FlatList, Platform, Dimensions, View, TouchableOpacity } from 'react-native';
+import { useRef, useMemo } from 'react';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+// For scrolling view of small cards
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import SmallCard from '../../components/SmallCard';
+import LargeCard from '../../components/LargeCard';
+import SearchWithFilter from '@/components/SearchWithFilter';
+
 
 // For geolocation
 import * as Location from 'expo-location';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 // For map
 import MapView, { Callout, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { SearchBar } from 'react-native-elements';
 
 // For backend
 import { useRouter } from 'expo-router';
@@ -18,12 +23,28 @@ import { useAuth } from '@/contexts/AuthContext'; // Importing the AuthContext f
 import { getAllStudySpaces } from '@/backend/backendFunctions';
 
 
+
 export default function HomeScreen() {
 
-  const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28448, longitude: -97.74222 });
-  const [studySpaceMarkers, setStudySpaceMarkers] = useState([]);
-
+  const router = useRouter();
   const {user} = useAuth(); // Get the current user from AuthContext
+
+
+  // FUNCTIONS FOR SCROLLABLE VIEW
+
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ['20%', '40%', '90%'], []);
+
+
+  const handleSheetChanges = useCallback((index: number) => {
+    console.log('handleSheetChanges', index);
+  }, []);
+
+
+  // FUNCTIONS FOR CURRENT LOCATION
+
+  const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28626, longitude: -97.73937 });
+  const [studySpaceMarkers, setStudySpaceMarkers] = useState([]);
 
   useEffect(() => {
     const fetchStudySpaces = async () => {
@@ -73,37 +94,167 @@ export default function HomeScreen() {
   }, []);
 
   console.log('Cur User:', user);
+
+
+  // FUNCTION TO CREATE LARGE CARDS
+
+  const callLargeCard = () => {
+    return(
+      <LargeCard></LargeCard>
+    );
+  };
+
+  // SEARCH BAR
+
+  const [search, setSearch] = useState('');
+
   
   return (
-    <View style={styles.generalMap}>
-        
-        {/* Meli's Map */}
-        <View style={styles.container}>
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: 30.28448,
-              longitude: -97.74222,
-              latitudeDelta: 0.020,
-              longitudeDelta: 0.010,
-            }}>
+      <View style={{ flex: 1 }}>
 
-            {/* Current Location */}
-            {currentLocation &&
-              <Marker
-                coordinate={currentLocation}>
-                <Image 
-                  source={require('../../assets/images/marker_S.png')}
-                  style={{ width: 50, height: 50 }} 
-                />
-                <View>
-                  <Text>Current Location</Text>
-                </View>
-              </Marker>
-            }
+        {/* SEARCH BAR */}
+        <SearchWithFilter></SearchWithFilter>
+
+        {/* Map */}
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}>
+
+          {/* Current Location - Melissa */}
+          {currentLocation &&
+            <Marker
+              coordinate={currentLocation}>
+              <Image 
+                source={require('../../assets/images/pfp_melissa.png')}
+                style={{ width: 50, height: 50 }} 
+              />
+            </Marker>
+          }
+
+          {/* Location - Vaishnuv */}
+          <Marker
+            coordinate={{latitude: 30.288075, longitude: -97.735714}}>
+            <Image 
+              source={require('../../assets/images/pfp_vaishnuv.png')}
+              style={{ width: 48, height: 48 }} 
+            />
+          </Marker>
+
+          {/* Location - Shruti */}
+          <Marker
+            coordinate={{latitude: 30.28668, longitude: -97.73782}}>
+            <Image 
+              source={require('../../assets/images/pfp_shruti.png')}
+              style={{ width: 50, height: 50 }} 
+            />
+          </Marker>
+
+          {/* Location - Rishindra */}
+          <Marker
+            coordinate={{latitude: 30.285876, longitude: -97.739407}}>
+            <Image 
+              source={require('../../assets/images/pfp_rishindra.png')}
+              style={{ width: 50, height: 50 }} 
+            />
+          </Marker>
+
+          {/* Location - Vincent */}
+          <Marker
+            coordinate={{latitude: 30.288491, longitude: -97.743310}}>
+            <Image 
+              source={require('../../assets/images/pfp_vincent.png')}
+              style={{ width: 50, height: 50 }} 
+            />
+          </Marker>
+
+          {/* Location - Drishti */}
+          <Marker
+            coordinate={{latitude: 30.289997, longitude: -97.740532}}>
+            <Image 
+              source={require('../../assets/images/pfp_drishti.png')}
+              style={{ width: 50, height: 50 }} 
+            />
+          </Marker>
+
+          {/* Location - Venkat */}
+          <Marker
+            coordinate={{latitude: 30.28417, longitude: -97.73783}}>
+            <Image 
+              source={require('../../assets/images/pfp_venkat.png')}
+              style={{ width: 50, height: 50 }} 
+            />
+          </Marker>
+
+          {/* Location - Ishita */}
+          <Marker
+            coordinate={{latitude: 30.28876, longitude: -97.73758}}>
+            <Image 
+              source={require('../../assets/images/pfp_ishita.png')}
+              style={{ width: 50, height: 50 }} 
+            />
+          </Marker>
+
           </MapView>
-        </View>
-    </View>
+
+        {/* List of Study Space Small Cards */}
+        <BottomSheet
+          ref={bottomSheetRef}
+          index={1}
+          snapPoints={snapPoints}
+          backgroundStyle={{
+            backgroundColor: 'rgba(255, 255, 255, 0.9)', // slightly transparent white
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+          }}
+        >
+          <BottomSheetView style={styles.scrollContent}>
+            <ScrollView
+            >
+              <SmallCard
+                name="PCL"
+                todayHrs="24/7"
+                distance={0.6}
+                imagePath="gs://studymap-5c5ae.firebasestorage.app/pcl.jpg"
+                features="something"
+              />
+              <SmallCard
+                name="Welch"
+                todayHrs="8 AM-4:30 PM"
+                distance={0.2}
+                imagePath="gs://studymap-5c5ae.firebasestorage.app/welch.png"
+                features="something"
+              />
+              <SmallCard
+                name="Gates Dell Complex"
+                todayHrs="24/7"
+                distance={0.1}
+                imagePath="gs://studymap-5c5ae.firebasestorage.app/gdc.png"
+                features="something"
+              />
+              <SmallCard
+                name="NRG Productivity Center"
+                todayHrs="9 AM-5 PM"
+                distance={0.4}
+                imagePath="gs://studymap-5c5ae.firebasestorage.app/nrg.jpg"
+                features="something"
+              />
+              <SmallCard
+                name="Moody (DMC)"
+                todayHrs="7 AM-11 PM"
+                distance={0.8}
+                imagePath="gs://studymap-5c5ae.firebasestorage.app/moody.png"
+                features="something"
+              />
+            </ScrollView>
+          </BottomSheetView>
+        </BottomSheet>
+
+      </View>
   );
 }
 
@@ -125,6 +276,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
 
+  cardContainer: {
+    width: "100%",
+    height: "100%",
+    padding: 16,
+    gap: 12,
+  },
+
   // added by Meli
   generalMap: {
     flex: 1,
@@ -142,7 +300,14 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   map: {
-    width: '100%',
-    height: '100%',
+    flex: 1,
   },
+
+  scrollContent: {
+    flex: 1,
+    padding: 8,
+    marginBottom: 130,
+  },
+
+  
 });

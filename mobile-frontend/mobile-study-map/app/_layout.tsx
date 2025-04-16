@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -37,7 +38,13 @@ export default function RootLayout() {
         <Stack>
 
           {/* All pages under (tabs) handled here */}
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="(tabs)" 
+            options={{ headerShown: false }} 
+            screenOptions={{
+              animation: 'slide_from_left',
+            }}
+          />
           <Stack.Screen name="+not-found" />
           
           {/* Added a screen per other external page */}
@@ -53,6 +60,19 @@ export default function RootLayout() {
             name="studylog"
             options={{ headerShown: false }} // Removes the header
           />
+          <Stack.Screen
+            name="largecard"
+            options={{ headerShown: false }} // Removes the header
+          />
+          <Stack.Screen
+            name="login"
+            options={{ headerShown: false }} // Removes the header
+          />
+          <Stack.Screen
+            name="filters"
+            options={{ headerShown: false }} // Removes the header
+          />
+
           
         </Stack>
         <StatusBar style="auto" />
@@ -74,8 +94,8 @@ function AppNavigator() {
   }
 
   return (
-    <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
+      <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
   );
 }

@@ -10,7 +10,7 @@ export default function StudyLogScreen() {
 
             {/* Container for the title and back arrow */}
             <View style={styles.titleContainer}>
-                <TouchableOpacity onPress={() => router.push('/settings')}>
+                <TouchableOpacity onPress={() => router.back()}>
                     <Image
                         source={require('../assets/images/arrow_back.png')}
                         style={styles.arrowIcon} 

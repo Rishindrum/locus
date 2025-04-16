@@ -18,7 +18,7 @@ export default function SettingsScreen() {
     <View style={styles.container}>
 
       <Image 
-        source={require('../../assets/images/marker_S.png')}
+        source={require('../../assets/images/pfp_melissa.png')}
         style={styles.pfp} 
       />
 

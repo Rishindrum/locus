@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
+import { View, TextInput, Image, Text, StyleSheet, TouchableOpacity } from 'react-native';
 // import { createUser, loginUser } from '../firebase/backendFunctions';
 import { useRouter } from 'expo-router';
 import {useAuth} from '../contexts/AuthContext';
@@ -40,6 +40,19 @@ const LoginScreen = () => {
 
   return (
     <View style={styles.container}>
+
+      {/* Logo */}
+
+      <Image 
+        style={styles.logo}
+        source={require('../assets/images/locus-logo.png')} 
+      />
+
+
+      <Text style={styles.title}>
+        {isSignUpMode ? 'Sign up with Locus' : 'Welcome back to Locus!'}
+      </Text>
+
       {isSignUpMode && (
         <TextInput
           placeholder="Name"
@@ -63,7 +76,11 @@ const LoginScreen = () => {
         style={styles.input}
         secureTextEntry
       />
-      <Button title={isSignUpMode ? 'Sign Up' : 'Log In'} onPress={handleAuthAction} />
+
+      <TouchableOpacity style={styles.submitButton} onPress={handleAuthAction}>
+        <Text style={styles.submitButtonText}>{isSignUpMode ? 'Sign Up' : 'Log In'} </Text>
+      </TouchableOpacity>
+      
       <Text
         style={styles.toggleText}
         onPress={() => setIsSignUpMode((prev) => !prev)}
@@ -75,9 +92,53 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 20, backgroundColor: '#fff' },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 10 },
-  toggleText: { color: 'blue', marginTop: 10 },
+  container: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    paddingHorizontal: 20, 
+    backgroundColor: '#FFFBF5' 
+  },
+
+  title: {
+    color: "#062F48",
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+
+
+  input: { 
+    width: '90%',
+    borderWidth: 1, 
+    borderColor: '#DC8B47', 
+    borderRadius: 10,
+    padding: 15, 
+    marginBottom: 15,
+    color: '#DC8B47'
+  },
+  toggleText: { 
+    color: '#2098e3', 
+    marginTop: 10 
+  },
+  submitButton: {
+    width: '90%',
+    backgroundColor: '#DC8B47',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+
+  logo: {
+    width: 130,
+    height: 130,
+  },
+
 });
 
 export default LoginScreen;

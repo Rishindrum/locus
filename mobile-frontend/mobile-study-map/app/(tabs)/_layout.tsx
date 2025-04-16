@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -19,6 +20,7 @@ export default function TabLayout() {
   }
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: "#DC8B47",
@@ -72,5 +74,6 @@ export default function TabLayout() {
       />
 
     </Tabs>
+    </GestureHandlerRootView>
   );
 }
