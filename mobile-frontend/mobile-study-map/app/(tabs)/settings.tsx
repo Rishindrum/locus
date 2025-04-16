@@ -7,12 +7,16 @@ export default function SettingsScreen() {
 
   const router = useRouter();
 
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+
+  const name = user.displayName || user.email.split('@')[0]; // Fallback to email if displayName is not available
 
   const handleSignOut = () => {
     logout();
     router.replace('/login');
   };
+
+  console.log(user); // Check if user is defined and has the expected properties
 
   return (
     <View style={styles.container}>
@@ -22,9 +26,9 @@ export default function SettingsScreen() {
         style={styles.pfp} 
       />
 
-      <Text style={styles.titleText}> My Settings </Text>
+      <Text style={styles.titleText}>{name}'s Settings </Text>
 
-      {/* Three buttons: preferences, saved spaces, and log out */}
+      {/* four buttons: preferences, saved spaces, following, and log out */}
 
       {/* Button going to preferred features */}
       <TouchableOpacity 
@@ -61,6 +65,20 @@ export default function SettingsScreen() {
       >
         <View style={styles.buttonContent}> 
           <Text style={styles.buttonText}>Study Log</Text>
+          <Image
+            source={require('../../assets/images/arrow_forward.png')}
+            style={styles.arrowIcon} 
+          />
+        </View>
+      </TouchableOpacity>
+
+      {/* Button going to following */}
+      <TouchableOpacity 
+        style={styles.settingsButton}
+        onPress={() => router.push('/follow')}
+      >
+        <View style={styles.buttonContent}> 
+          <Text style={styles.buttonText}>Following</Text>
           <Image
             source={require('../../assets/images/arrow_forward.png')}
             style={styles.arrowIcon} 

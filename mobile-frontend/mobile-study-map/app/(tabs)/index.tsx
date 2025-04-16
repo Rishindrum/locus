@@ -107,7 +107,6 @@ export default function HomeScreen() {
   // SEARCH BAR
 
   const [search, setSearch] = useState('');
-
   
   return (
       <View style={{ flex: 1 }}>
@@ -199,6 +198,25 @@ export default function HomeScreen() {
             />
           </Marker>
 
+
+           
+
+             {/* Study Space Markers from Firestore */}
+          {studySpaceMarkers.map((space) => (
+            <Marker
+              key={space.id}
+              coordinate={space.coordinate}
+              title={space.name}
+              description={space.address}
+            >
+              <Callout>
+                <View style={styles.callout}>
+                  <Text style={styles.calloutTitle}>{space.name}</Text>
+                  <Text>{space.address}</Text>
+                </View>
+              </Callout>
+            </Marker>
+          ))}
           </MapView>
 
         {/* List of Study Space Small Cards */}
