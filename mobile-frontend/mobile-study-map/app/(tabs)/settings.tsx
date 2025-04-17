@@ -16,7 +16,7 @@ export default function SettingsScreen() {
     router.replace('/login');
   };
 
-  console.log(user); // Check if user is defined and has the expected properties
+  // console.log(user); // Check if user is defined and has the expected properties
 
   return (
     <View style={styles.container}>

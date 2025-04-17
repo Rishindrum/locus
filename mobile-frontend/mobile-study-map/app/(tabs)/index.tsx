@@ -114,6 +114,10 @@ export default function HomeScreen() {
         const spaces = await getAllStudySpaces();
         const formattedMarkers = spaces.map((space) => ({
           id: space.id,
+          coordinate: {
+            latitude: space.location[0],
+            longitude: space.location[1]
+          },
           coordinate: { 
             latitude: space.location[0], 
             longitude: space.location[1]
@@ -129,6 +133,15 @@ export default function HomeScreen() {
 
     fetchStudySpaces();
   }, []);
+
+  // Helper function to parse location string from Firestore
+  // const parseLocationString = (locationStr) => {
+  //   const [lat, lng] = locationStr
+  //     .replace(/[\[\]]/g, '')
+  //     .split(',')
+  //     .map(Number);
+  //   return { latitude: lat, longitude: lng };
+  // };
 
   const requestLocationPermission = async () => {
     try {
@@ -151,6 +164,19 @@ export default function HomeScreen() {
 
   console.log('Cur User:', user);
 
+
+  // FUNCTION TO CREATE LARGE CARDS
+
+  const callLargeCard = () => {
+    return(
+      <LargeCard></LargeCard>
+    );
+  };
+
+  // SEARCH BAR
+
+  const [search, setSearch] = useState('');
+  
   return (
       <View style={{ flex: 1 }}>
 
