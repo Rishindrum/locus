@@ -1,23 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import Slider from '@react-native-community/slider';
 import DropDownPicker from 'react-native-dropdown-picker';
-
-
-// For Study Space Drop Down Selection
-type StudySpace = {
-  label: string;
-  value: string;
-};
-
-const studySpaces: StudySpace[] = [
-  { label: 'PCL', value: '1' },
-  { label: 'Welch', value: '2' },
-  { label: 'NRG Productivity Center', value: '3' },
-  { label: 'Gates Dell Complex', value: '4' },
-  { label: 'Moody (DMC)', value: '5' },
-];
-
+import { getAllStudySpaces, updateStudySpace } from '@/backend/backendFunctions';
 
 // Custom Slider Component
 const RatingSlider = ({ label, value, lowestLabel, highestLabel, onValueChange }) => (
@@ -48,25 +33,25 @@ const RatingSlider = ({ label, value, lowestLabel, highestLabel, onValueChange }
 
 // Set up categories for easy changes
 const categories = [
-  { id: "1", name: "Lighting", options: ["Artificial", "Natural", "Dim", "Bright"] },
-  { id: "2", name: "Seating Types", options: ["Couches", "Desks", "Comfy", "Hard"] },
-  { id: "3", name: "Aesthetics", options: ["Dark Academia", "Minimalist", "Cozy", "Corporate", "Modern", "Vintage"] },
+  { name: "Lighting", options: ["Artificial", "Natural", "Dim", "Bright"] },
+  { name: "Seating Types", options: ["Couches", "Desks", "Comfy", "Hard"] },
+  { name: "Aesthetics", options: ["Dark Academia", "Minimalist", "Cozy", "Corporate"] },
 ];
 
 
 // Custom Category Selection Component
-const CategorySelection = ({ id, label, options, selected, onValueChange }) => (
+const CategorySelection = ({ categoryName, label, options, selected, onValueChange }) => (
   <View>
     <Text style={styles.categoryLabel}>{label}</Text>
 
     <View style={styles.optionsContainer}>
             {options.map((option) => {
-              const isSelected = selected[id]?.includes(option);
+              const isSelected = selected[categoryName]?.includes(option);
               return (
                 <TouchableOpacity
                   key={option}
                   style={[styles.option, isSelected && styles.selectedOption]}
-                  onPress={() => onValueChange(id, option)}
+                  onPress={() => onValueChange(categoryName, option)}
                 >
                   <Text style={[styles.optionText, isSelected && styles.selectedOptionText]}>
                     {option}
@@ -84,15 +69,41 @@ const RatingForm = () => {
   // Set up selected study space
   const [open, setOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState<string | null>(null);
-  const [items, setItems] = useState(studySpaces);
+  const [items, setItems] = useState([]);
+  const [studySpaces, setStudySpaces] = useState([]);
+
+  useEffect(() => {
+    const fetchStudySpaces = async () => {
+      try {
+        const spaces = await getAllStudySpaces(); 
+        setStudySpaces(spaces);
+        const mappedItems = spaces.map(space => ({
+          label: space.name,
+          value: space.spaceId,
+        }));
+        setItems(mappedItems);
+      } catch (error) {
+        console.error('Error fetching study spaces:', error);
+      }
+    };
+  
+    fetchStudySpaces();
+  }, []);
 
   // Set up sliders' states
-  const [sliders, setSliders] = useState({
-    noiseLevel: 2,
-    temperature: 2,
-    wifi: 2,
-    outlet: 2,
-    cleanliness: 2,
+  type SliderField =
+  | "features.noise"
+  | "features.temp"
+  | "features.wifi"
+  | "features.outlet"
+  | "features.cleanliness";
+
+  const [sliders, setSliders] = useState<Record<SliderField, number>>({
+    "features.noise": 2,
+    "features.temp": 2,
+    "features.wifi": 2,
+    "features.outlet": 2,
+    "features.cleanliness": 2,
   });
 
   // Set up categories' states
@@ -107,23 +118,61 @@ const RatingForm = () => {
   };
 
   // Function to change category selection state
-  const toggleOption = (categoryId: string, option: string) => {
+  const toggleOption = (categoryName: string, option: string) => {
     setSelectedOptions((prev) => {
-      const selected = prev[categoryId] || [];
+      const selected = prev[categoryName] || [];
       return {
         ...prev,
-        [categoryId]: selected.includes(option)
+        [categoryName]: selected.includes(option)
           ? selected.filter((item) => item !== option) // Remove if already selected
           : [...selected, option], // Add if not selected
       };
     });
   };
 
+  // Function to submit rating
+  const handleSubmit = async () => {
+    if (!selectedValue) {
+      console.warn("No study space selected.");
+      return;
+    }
+
+    const space = studySpaces.find(space => space.spaceId === selectedValue);
+    const numRatings = space.numRatings;
+
+    // Fields to average
+    const fieldsToAverage = ["features.noise", "features.outlets", "features.temp", "features.wifi", "features.cleanliness"];
+
+    const averagedData = {};
+    fieldsToAverage.forEach(field => {
+      const oldValue = space[field] || 0;
+      const newValue = sliders[field as SliderField];
+      averagedData[field] = ((oldValue * numRatings) + newValue) / (numRatings + 1);
+    });
+
+    // Merge in categories and comment
+    const updatedData = {
+      ...averagedData,
+      numRatings: numRatings + 1,
+      // categories: newRatings.categories,
+    };
+  
+    try {
+      await updateStudySpace(selectedValue, updatedData);
+      console.log(`selectedOptions: ${selectedOptions}`);
+      console.log(`text: ${text}`);
+      console.log(`sliders: ${sliders}`);
+
+      console.log("Study space updated successfully.");
+      
+    } catch (error) {
+      console.error("Error updating study space:", error);
+    }
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
 
-    <View style={styles.formContainer}>
-
+    <View style={styles.scrollContainer}>
       <Text style={styles.heading}>Rate the Study Space</Text>
 
       <DropDownPicker
@@ -134,43 +183,47 @@ const RatingForm = () => {
         setValue={setSelectedValue}
         setItems={setItems}
         placeholder="Choose a study space"
-        containerStyle={{ marginBottom: open ? (items.length) * 25 : 20 }} // prevent clipping when open
+        containerStyle={{ marginBottom: 20, width: "90%", }} 
         style={styles.dropdown}
         dropDownContainerStyle={styles.dropdownContainer}
       />
 
+    <ScrollView>
+
+    <View style={styles.formContainer}>
+
       {/* Sliders */}
       <RatingSlider
         label="Noise Level"
-        value={sliders.noiseLevel}
+        value={sliders['features.noise']}
         lowestLabel="Quiet"
         highestLabel="Loud"
         onValueChange={handleSliderChange('noiseLevel')}
       />
       <RatingSlider
         label="Temperature"
-        value={sliders.temperature}
+        value={sliders['features.temp']}
         lowestLabel="Cold"
         highestLabel="Hot"
         onValueChange={handleSliderChange('temperature')}
       />
       <RatingSlider
         label="WiFi Quality"
-        value={sliders.wifi}
+        value={sliders['features.wifi']}
         lowestLabel="Poor"
         highestLabel="Excellent"
         onValueChange={handleSliderChange('wifi')}
       />
       <RatingSlider
         label="Outlet Availability"
-        value={sliders.outlet}
+        value={sliders['features.outlet']}
         lowestLabel="Few"
         highestLabel="Plenty"
         onValueChange={handleSliderChange('outlet')}
       />
       <RatingSlider
         label="Cleanliness"
-        value={sliders.cleanliness}
+        value={sliders['features.cleanliness']}
         lowestLabel="Dirty"
         highestLabel="Clean"
         onValueChange={handleSliderChange('cleanliness')}
@@ -178,7 +231,7 @@ const RatingForm = () => {
 
       {/* Categorical Selections */}
       <CategorySelection
-        id={categories[0].id}
+        categoryName={categories[0].name}
         label={categories[0].name}
         options={categories[0].options}
         selected={selectedOptions}
@@ -186,7 +239,7 @@ const RatingForm = () => {
       />
 
       <CategorySelection
-        id={categories[1].id}
+        categoryName={categories[1].name}
         label={categories[1].name}
         options={categories[1].options}
         selected={selectedOptions}
@@ -194,7 +247,7 @@ const RatingForm = () => {
       />
 
       <CategorySelection
-        id={categories[2].id}
+        categoryName={categories[2].name}
         label={categories[2].name}
         options={categories[2].options}
         selected={selectedOptions}
@@ -211,11 +264,13 @@ const RatingForm = () => {
       />
 
       {/* Submit Button */}
-      <TouchableOpacity style={styles.submitButton} onPress={() => alert('Rating Submitted!')}>
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <Text style={styles.submitButtonText}>Submit Rating</Text>
       </TouchableOpacity>
     </View>
     </ScrollView>
+
+    </View>
   );
 };
 
@@ -230,12 +285,13 @@ const styles = StyleSheet.create({
     padding: 20,
     flex: 1,
     justifyContent: 'center',
+    marginBottom: 200,
   },
   heading: {
     fontSize: 24,
     fontWeight: 'bold',
     color: "#062F48",
-    marginTop: 40,
+    marginTop: 60,
     marginBottom: 20,
     textAlign: 'center',
   },

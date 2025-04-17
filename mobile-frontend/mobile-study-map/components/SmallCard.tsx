@@ -7,48 +7,61 @@ import { useEffect, useState } from 'react';
 import { storage } from '@/backend/firebaseConfig';
 import { ref, getDownloadURL } from 'firebase/storage';
 
-
-type SmallCardProps = {
-    name: string, 
-    todayHrs: string,
-    distance: number, 
-    imagePath: string, 
-    features: string, // Nested object???
+type FeatureRatings = {
+  aesthetics: {
+    corporate: number;
+    cozy: number;
+    dark_academia: number;
+    minimalist: number;
+  };
+  lighting: {
+    artificial: number;
+    bright: number;
+    dim: number;
+    natural: number;
+  };
+  reservable: {
+    no: number;
+    yes: number;
+  };
+  seating: {
+    couches: number;
+    desks: number;
+    comfy: number;
+    hard: number;
+  };
+  noise: number;
+  outlets: number;
+  temp: number;
+  wifi: number;
+  cleanliness: number;
 };
 
-const SmallCard: React.FC<SmallCardProps> = ({ name, todayHrs, distance, imagePath, features }) => {
+type StudySpace = {
+  id: string,
+  address: string;
+  createdBy: string;
+  features: FeatureRatings;
+  hours: string;
+  images: string[]; // assuming each image is a URL string
+  location: [number, number]; // [latitude, longitude]
+  name: string;
+  numRatings: number;
+  spaceId: string;
+};
+
+type SmallCardProps = {
+  space: StudySpace,
+};
+
+const SmallCard: React.FC<SmallCardProps> = ({ space }) => {
 
     const router = useRouter();
 
-    // FUNCTION TO RENDER IMAGES
-
-    const [imageURL, setImageURL] = useState<string | null>(null);
-
-    useEffect(() => {
-      const fetchImageURL = async () => {
-        try {
-          const path = imagePath.replace('gs://studymap-5c5ae.appspot.com/', '');
-          const storageRef = ref(storage, path);
-          const url = await getDownloadURL(storageRef);
-          setImageURL(url);
-        } catch (error) {
-          console.error('Failed to fetch image URL:', error);
-        }
-      };
-
-      fetchImageURL();
-    }, [imagePath]);
-
+    // FUNCTION TO CALL AND CREATE LARGE CARD
     const displayLargeCard = () => {
       router.push({
-        pathname: `./largecard/${name}`,
-        params: {
-          name,
-          todayHrs,
-          distance: distance.toString(),
-          features,
-          imageURL,
-        },
+        pathname: `./largecard/${space.spaceId}`,
       });
     };
 
@@ -58,35 +71,65 @@ const SmallCard: React.FC<SmallCardProps> = ({ name, todayHrs, distance, imagePa
         style={styles.card}
       >
         <View>
-            <Text style={styles.name}>{name}</Text> 
+            <Text style={styles.name}>{space.name}</Text> 
 
             <View style={styles.card2}> 
             {/* Left Section*/}
             <View style={styles.leftcontainer}>
-                <Text style={styles.text}>{todayHrs}</Text>
-                <Text style={styles.text}>{distance} mi</Text>
-                {imageURL && (
-                  <Image style={styles.image} source={{ uri: imageURL }} />
-                )}
+                <Text style={styles.text}>{space.hours}</Text>
+                <Text style={styles.text}>1 mi</Text>
+                <Image style={styles.image} source={{ uri: space.images[0] }} />
             </View> 
 
             {/* Right Section*/}
             <View style={styles.rightcontainer}>
                 {/* Feature Tags Section*/}
                 <View style={styles.tagsContainer}> 
-                  {/* TODO: need to figure out how to actually display labels */}
-                  <Text style={styles.tag}>Natural</Text>
-                  <Text style={styles.tag}>Desks</Text>
-                  <Text style={styles.tag}>Comfy Couches</Text>
-                  <Text style={styles.tag}>Minimalist</Text>
-                  <Text style={styles.tag}>Cozy</Text>
+
+                  {/* Aesthetics */}
+                  { space.features.aesthetics.corporate > 0 && 
+                    <Text style={styles.tag}>Corporate</Text> }
+                  { space.features.aesthetics.cozy > 0 && 
+                    <Text style={styles.tag}>Cozy</Text> }
+                  { space.features.aesthetics.dark_academia > 0 && 
+                    <Text style={styles.tag}>Dark Academia</Text> }
+                  { space.features.aesthetics.minimalist > 0 && 
+                    <Text style={styles.tag}>Minimalist</Text> }
+
+                  {/* Lighting */}
+                  { space.features.lighting.artificial > 0 && 
+                    <Text style={styles.tag}>Artificial</Text> }
+                  { space.features.lighting.natural > 0 && 
+                    <Text style={styles.tag}>Natural</Text> }
+                  { space.features.lighting.dim > 0 && 
+                    <Text style={styles.tag}>Dim</Text> }
+                  { space.features.lighting.bright > 0 && 
+                    <Text style={styles.tag}>Bright</Text> }
+
+                  {/* Seating */}
+                  { space.features.seating.comfy > 0 && 
+                    <Text style={styles.tag}>Comfy</Text> }
+                  { space.features.seating.couches > 0 && 
+                    <Text style={styles.tag}>Couches</Text> }
+                  { space.features.seating.desks > 0 && 
+                    <Text style={styles.tag}>Desks</Text> }
+                  { space.features.seating.hard > 0 && 
+                    <Text style={styles.tag}>Hard</Text> }
+
                 </View>
 
                 {/* TODO: pull most common words/themes from reviews in small quotes */}
 
                 <View style={styles.iconcontainer}>
-                  <MaterialCommunityIcons name="wifi" size={24} color="black" padding={5} />
-                  <MaterialCommunityIcons name="power-socket-us" size={24} color="black" padding={5} />
+                  {
+                    space.features.outlets > 0 &&
+                    <MaterialCommunityIcons name="power-socket-us" size={24} color="black" padding={5} />
+                  }
+
+                  {
+                    space.features.wifi > 0 &&
+                    <MaterialCommunityIcons name="wifi" size={24} color="black" padding={5} />
+                  }
                 </View>
 
             </View>
@@ -139,7 +182,9 @@ const styles = StyleSheet.create({
     tagsContainer: {
       flexDirection: "row",
       flexWrap: "wrap",
-      width: "95%",
+      width: "80%",
+      maxHeight: 100, // or whatever height constraint you want
+      overflow: 'hidden', // 🔥 this hides anything beyond the height
       marginTop: 5,
     },
 

@@ -9,7 +9,7 @@ export default function SettingsScreen() {
 
   const { user, logout } = useAuth();
 
-  const name = user.displayName || user.email.split('@')[0]; // Fallback to email if displayName is not available
+  const name = user.name || user.email.split('@')[0]; // Fallback to email if displayName is not available
 
   const handleSignOut = () => {
     logout();

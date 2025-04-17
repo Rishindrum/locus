@@ -20,7 +20,53 @@ import { SearchBar } from 'react-native-elements';
 // For backend
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext'; // Importing the AuthContext for authentication
-import { getAllStudySpaces } from '@/backend/backendFunctions';
+import { getAllStudySpaces, getStudySpace } from '@/backend/backendFunctions';
+
+
+// Type Definition for Study Space Schema
+type FeatureRatings = {
+  aesthetics: {
+    corporate: number;
+    cozy: number;
+    dark_academia: number;
+    minimalist: number;
+  };
+  lighting: {
+    artificial: number;
+    bright: number;
+    dim: number;
+    natural: number;
+  };
+  reservable: {
+    no: number;
+    yes: number;
+  };
+  seating: {
+    couches: number;
+    desks: number;
+    comfy: number;
+    hard: number;
+  };
+  noise: number;
+  outlets: number;
+  temp: number;
+  wifi: number;
+  cleanliness: number;
+};
+
+type StudySpace = {
+  id: string,
+  address: string;
+  createdBy: string;
+  features: FeatureRatings;
+  hours: string;
+  images: string[]; // assuming each image is a URL string
+  location: [number, number]; // [latitude, longitude]
+  name: string;
+  numRatings: number;
+  spaceId: string;
+};
+
 
 
 
@@ -41,18 +87,37 @@ export default function HomeScreen() {
   }, []);
 
 
-  // FUNCTIONS FOR CURRENT LOCATION
-
+  // FUNCTIONS FOR CURRENT LOCATION, SPACES LOCATIONS
   const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28626, longitude: -97.73937 });
   const [studySpaceMarkers, setStudySpaceMarkers] = useState([]);
+  const [studySpaces, setStudySpaces] = useState([]);
 
+  useEffect(() => {
+    const fetchStudySpaces = async () => {
+      try {
+        const spaces = await getAllStudySpaces(); // Already returns full data
+        setStudySpaces(spaces);
+      } catch (error) {
+        console.error('Error fetching study spaces:', error);
+      }
+    };
+    fetchStudySpaces();
+  }, []);
+
+
+
+
+  // Fetch and display the study space markers
   useEffect(() => {
     const fetchStudySpaces = async () => {
       try {
         const spaces = await getAllStudySpaces();
         const formattedMarkers = spaces.map((space) => ({
           id: space.id,
-          coordinate: parseLocationString(space.location),
+          coordinate: { 
+            latitude: space.location[0], 
+            longitude: space.location[1]
+          },
           name: space.name,
           address: space.address,
         }));
@@ -64,15 +129,6 @@ export default function HomeScreen() {
 
     fetchStudySpaces();
   }, []);
-
-  // Helper function to parse location string from Firestore
-  const parseLocationString = (locationStr) => {
-    const [lat, lng] = locationStr
-      .replace(/[\[\]]/g, '')
-      .split(',')
-      .map(Number);
-    return { latitude: lat, longitude: lng };
-  };
 
   const requestLocationPermission = async () => {
     try {
@@ -95,19 +151,6 @@ export default function HomeScreen() {
 
   console.log('Cur User:', user);
 
-
-  // FUNCTION TO CREATE LARGE CARDS
-
-  const callLargeCard = () => {
-    return(
-      <LargeCard></LargeCard>
-    );
-  };
-
-  // SEARCH BAR
-
-  const [search, setSearch] = useState('');
-  
   return (
       <View style={{ flex: 1 }}>
 
@@ -201,7 +244,7 @@ export default function HomeScreen() {
 
            
 
-             {/* Study Space Markers from Firestore */}
+            {/* Study Space Markers from Firestore */}
           {studySpaceMarkers.map((space) => (
             <Marker
               key={space.id}
@@ -219,6 +262,7 @@ export default function HomeScreen() {
           ))}
           </MapView>
 
+
         {/* List of Study Space Small Cards */}
         <BottomSheet
           ref={bottomSheetRef}
@@ -233,7 +277,15 @@ export default function HomeScreen() {
           <BottomSheetView style={styles.scrollContent}>
             <ScrollView
             >
-              <SmallCard
+              {studySpaces.map((space) => (
+                <SmallCard 
+                  key={space.id}
+                  space={space}
+                />
+              ))}
+
+
+              {/* <SmallCard
                 name="PCL"
                 todayHrs="24/7"
                 distance={0.6}
@@ -267,7 +319,7 @@ export default function HomeScreen() {
                 distance={0.8}
                 imagePath="gs://studymap-5c5ae.firebasestorage.app/moody.png"
                 features="something"
-              />
+              /> */}
             </ScrollView>
           </BottomSheetView>
         </BottomSheet>
