@@ -172,7 +172,7 @@ export const createStudySpace = async (userId, spaceData) => {
 // Update an existing study space
 export const updateStudySpace = async (spaceId, spaceData) => {
   try {
-    await updateDoc(doc(db, "studySpaces", spaceId), spaceData);
+    await updateDoc(doc(db, "studySpaces", spaceId), spaceData, { merge: true });
     return { success: true };
   } catch (error) {
     console.error("Error updating study space:", error);

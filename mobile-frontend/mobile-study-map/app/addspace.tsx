@@ -387,7 +387,7 @@ export default function AddSpaceScreen() {
         </View>
         
         {/* Image URLs */}
-        <Text style={styles.sectionTitle}>Images (URLs)</Text>
+        {/* <Text style={styles.sectionTitle}>Images (URLs)</Text>
         {imageUrls.map((url, index) => (
           <TextInput
             key={index}
@@ -406,7 +406,7 @@ export default function AddSpaceScreen() {
             }}
             placeholder="Enter image URL"
           />
-        ))}
+        ))} */}
         
         <View style={styles.buttonContainer}>
           <Button

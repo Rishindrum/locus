@@ -21,22 +21,12 @@ import { SearchBar } from 'react-native-elements';
 import { useRouter } from 'expo-router';
 import { getAllStudySpaces } from '@/backend/backendFunctions';
 
+
+// Type Definition for Study Space Schema
 interface LocationData {
   latitude: number;
   longitude: number;
   timestamp: number;
-}
-
-interface StudySpace {
-  id: string;
-  name: string;
-  location: {
-    latitude: number;
-    longitude: number;
-  };
-  address: string;
-  hours: string;
-  features: any;
 }
 
 interface AuthContextType {
@@ -53,10 +43,56 @@ interface UserLocation {
   };
 }
 
+type FeatureRatings = {
+  aesthetics: {
+    corporate: number;
+    cozy: number;
+    dark_academia: number;
+    minimalist: number;
+  };
+  lighting: {
+    artificial: number;
+    bright: number;
+    dim: number;
+    natural: number;
+  };
+  reservable: {
+    no: number;
+    yes: number;
+  };
+  seating: {
+    couches: number;
+    desks: number;
+    comfy: number;
+    hard: number;
+  };
+  noise: number;
+  outlets: number;
+  temp: number;
+  wifi: number;
+  cleanliness: number;
+};
+
+type StudySpace = {
+  id: string;
+  name: string;
+  address: string;
+  createdBy: string;
+  features: FeatureRatings;
+  hours: string;
+  location: [number, number]; // [latitude, longitude]
+  numRatings: number;
+  spaceId: string;
+  images?: string[];
+};
+
+
+
+
 export default function HomeScreen() {
 
   const router = useRouter();
-  const { user } = useAuth() as AuthContextType;
+  const {user} = useAuth(); // Get the current user from AuthContext
   const { userLocations, startLocationSharing } = useLocation();
   const [region, setRegion] = useState<Region | null>(null);
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
@@ -100,33 +136,31 @@ export default function HomeScreen() {
     getCurrentLocation();
   }, []);
 
+
   // FUNCTIONS FOR SCROLLABLE VIEW
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['20%', '40%', '90%'], []);
 
+
   const handleSheetChanges = useCallback((index: number) => {
     console.log('handleSheetChanges', index);
   }, []);
 
-  // FUNCTIONS FOR CURRENT LOCATION
 
+  // FUNCTIONS FOR CURRENT LOCATION, SPACES LOCATIONS
+  // const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28626, longitude: -97.73937 });
   const [studySpaceMarkers, setStudySpaceMarkers] = useState<StudySpace[]>([]);
 
+
+
+
+  // Fetch and display the study space markers
   useEffect(() => {
     const fetchStudySpaces = async () => {
       try {
         const spaces = await getAllStudySpaces();
-        const formattedMarkers = spaces.map((space) => ({
-          id: space.id,
-          location: {
-            latitude: space.location[0],
-            longitude: space.location[1]
-          },
-          name: space.name,
-          address: space.address,
-        }));
-        setStudySpaceMarkers(formattedMarkers);
+        setStudySpaceMarkers(spaces);
       } catch (error) {
         console.error('Error fetching study spaces:', error);
       }
@@ -134,15 +168,6 @@ export default function HomeScreen() {
 
     fetchStudySpaces();
   }, []);
-
-  // Helper function to parse location string from Firestore
-  // const parseLocationString = (locationStr) => {
-  //   const [lat, lng] = locationStr
-  //     .replace(/[\[\]]/g, '')
-  //     .split(',')
-  //     .map(Number);
-  //   return { latitude: lat, longitude: lng };
-  // };
 
   const requestLocationPermission = async () => {
     try {
@@ -153,7 +178,7 @@ export default function HomeScreen() {
       }
       // If permissions are granted, fetch the location
       const location = await Location.getCurrentPositionAsync({});
-      setCurrentLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude, timestamp: location.timestamp });
+      setCurrentLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
     } catch (error) {
       console.error('Error requesting location permission:', error);
     }
@@ -164,6 +189,7 @@ export default function HomeScreen() {
   }, []);
 
   // console.log('Cur User:', user);
+
 
   // FUNCTION TO CREATE LARGE CARDS
 
@@ -305,14 +331,15 @@ export default function HomeScreen() {
               );
             })}
 
+
             {/* Study Space Markers from Firestore */}
             {studySpaceMarkers.map((space) => (
-              space.location && space.location.latitude && space.location.longitude ? (
+              space.location ? (
                 <Marker
                   key={space.id}
                   coordinate={{
-                    latitude: space.location.latitude,
-                    longitude: space.location.longitude,
+                    latitude: space.location[0],
+                    longitude: space.location[1]
                   }}
                   title={space.name}
                   description={space.address}
@@ -341,9 +368,19 @@ export default function HomeScreen() {
           }}
         >
           <BottomSheetView style={styles.scrollContent}>
-            <ScrollView
-            >
-              <SmallCard
+            <ScrollView>
+              {studySpaceMarkers.map((space) => (
+                <SmallCard
+                  key={space.id}
+                  space={{
+                    ...space,
+                    images: space.images || []
+                  }}
+                />
+              ))}
+
+
+              {/* <SmallCard
                 name="PCL"
                 todayHrs="24/7"
                 distance={0.6}
@@ -377,7 +414,7 @@ export default function HomeScreen() {
                 distance={0.8}
                 imagePath="gs://studymap-5c5ae.firebasestorage.app/moody.png"
                 features="something"
-              />
+              /> */}
             </ScrollView>
           </BottomSheetView>
         </BottomSheet>
@@ -428,9 +465,9 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   map: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
   },
-
   scrollContent: {
     flex: 1,
     padding: 8,
@@ -473,7 +510,6 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
-
   scrollContent: {
     flex: 1,
     padding: 8,

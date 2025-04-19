@@ -71,7 +71,7 @@ export default function FiltersScreen() {
         <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-            <Text style={styles.title}>Preferences</Text>
+            <Text style={styles.title}>Filters</Text>
             <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="close-circle-outline" size={28} color="#DC8B47" />
             </TouchableOpacity>
