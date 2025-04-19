@@ -16,6 +16,7 @@ interface UserLocation {
   userId: string;
   name: string;
   location: LocationData | null;
+  pfp?: string | null;
 }
 
 interface LocationContextType {
@@ -126,6 +127,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
                   userId: followedUserId,
                   name: userData.name || 'Unknown',
                   location: userData.location || null,
+                  pfp: userData.pfp || null,
                 }
               ];
             });

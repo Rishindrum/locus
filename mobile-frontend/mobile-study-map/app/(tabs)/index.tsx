@@ -24,6 +24,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { getAllStudySpaces, getStudySpace } from '@/backend/backendFunctions';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/backend/firebaseConfig';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 // Type Definition for Study Space Schema
@@ -45,6 +46,7 @@ interface UserLocation {
     longitude: number;
     timestamp: number;
   };
+  pfp?: string;
 }
 
 type FeatureRatings = {
@@ -346,11 +348,18 @@ export default function HomeScreen() {
                 }}
                 onPress={() => handleUserMarkerPress(userLocation)}
               >
-                <View style={markerStyle}>
-                  <Text style={styles.markerText}>
-                    {userLocation.name.split(' ').map((part) => part[0]).join('').toUpperCase()}
-                  </Text>
-                </View>
+                {userLocation.pfp ? (
+                  <Image
+                    source={{ uri: userLocation.pfp }}
+                    style={styles.markerProfilePic}
+                  />
+                ) : (
+                  <View style={markerStyle}>
+                    <Text style={styles.markerText}>
+                      {userLocation.name.split(' ').map((part) => part[0]).join('').toUpperCase()}
+                    </Text>
+                  </View>
+                )}
                 <Callout>
                   <View style={styles.callout}>
                     <Text style={styles.calloutText}>{userLocation.name}</Text>
@@ -534,5 +543,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  markerProfilePic: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: '#eee',
+    resizeMode: 'cover',
+    alignSelf: 'center',
   },
 });

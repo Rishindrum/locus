@@ -17,6 +17,7 @@ import {
   arrayRemove
 } from "firebase/firestore";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import * as FileSystem from 'expo-file-system';
 
 // ===== LOGIN/LOGOUT/REGISTER/DELETE/FORGOT_PASSWORD USER FUNCTIONS ARE IN ../contexts/AuthContext.tsx ===== 
 // ===== USER FUNCTIONS =====
@@ -91,13 +92,9 @@ export const fetchAllUsersExceptCurrent = async (currentUserId: string) => {
 // Upload profile photo for new user to Firebase Storage
 export const uploadProfilePicture = async (userId: string, imageUri: string) => {
   const imageRef = ref(storage, `profilePictures/${userId}.jpg`);
-
-  const imageData = await FileSystem.readAsStringAsync(imageUri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-
-  const blob = await fetch(`data:image/jpeg;base64,${imageData}`).then(res => res.blob());
-
+  // Use fetch to get blob directly from URI (works in Expo/React Native)
+  const response = await fetch(imageUri);
+  const blob = await response.blob();
   await uploadBytes(imageRef, blob);
   const downloadURL = await getDownloadURL(imageRef);
   return downloadURL;
