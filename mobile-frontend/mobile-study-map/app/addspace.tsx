@@ -123,8 +123,8 @@ export default function AddSpaceScreen() {
     try {
       // Prepare location format as shown in your Firestore
       const location = latitude && longitude 
-        ? `[${latitude}, ${longitude}]` 
-        : '';
+        ? { 0 : Number(latitude), 1 : Number(longitude)} 
+        : null;
       
       // Filter out empty image URLs
       const images = imageUrls.filter(url => url.trim() !== '');

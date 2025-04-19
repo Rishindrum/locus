@@ -1,5 +1,5 @@
-import React, { Text, ScrollView, Image, StyleSheet, FlatList, Platform, Dimensions, View, TouchableOpacity } from 'react-native';
-import { useRef, useMemo } from 'react';
+import { Text, ScrollView, Image, StyleSheet, FlatList, Platform, Dimensions, View, TouchableOpacity } from 'react-native';
+import React, { useRef, useMemo, useEffect, useState, useCallback } from 'react';
 
 // For scrolling view of small cards
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -8,13 +8,13 @@ import SmallCard from '../../components/SmallCard';
 import LargeCard from '../../components/LargeCard';
 import SearchWithFilter from '@/components/SearchWithFilter';
 
-
 // For geolocation
 import * as Location from 'expo-location';
-import { useEffect, useState, useCallback } from 'react';
+import { useLocation } from '@/contexts/LocationContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // For map
-import MapView, { Callout, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Callout, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { SearchBar } from 'react-native-elements';
 
 // For backend
@@ -26,6 +26,26 @@ import { db } from '@/backend/firebaseConfig';
 
 
 // Type Definition for Study Space Schema
+interface LocationData {
+  latitude: number;
+  longitude: number;
+  timestamp: number;
+}
+
+interface AuthContextType {
+  user: { uid: string; displayName: string } | null;
+}
+
+interface UserLocation {
+  userId: string;
+  displayName: string;
+  location: {
+    latitude: number;
+    longitude: number;
+    timestamp: number;
+  };
+}
+
 type FeatureRatings = {
   aesthetics: {
     corporate: number;
@@ -57,16 +77,16 @@ type FeatureRatings = {
 };
 
 type StudySpace = {
-  id: string,
+  id: string;
+  name: string;
   address: string;
   createdBy: string;
   features: FeatureRatings;
   hours: string;
-  images: string[]; // assuming each image is a URL string
   location: [number, number]; // [latitude, longitude]
-  name: string;
   numRatings: number;
   spaceId: string;
+  images?: string[];
 };
 
 
@@ -76,6 +96,48 @@ export default function HomeScreen() {
 
   const router = useRouter();
   const {user} = useAuth(); // Get the current user from AuthContext
+  const { userLocations, startLocationSharing } = useLocation();
+  const [region, setRegion] = useState<Region | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
+  const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    // Start sharing location when component mounts
+    startLocationSharing();
+  }, []);
+
+  useEffect(() => {
+    const getCurrentLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Permission denied', 'Location permission is required.');
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({});
+        const newRegion = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        };
+        setRegion(newRegion);
+        setCurrentLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          timestamp: location.timestamp,
+        });
+
+        // Animate to the location
+        mapRef.current?.animateToRegion(newRegion, 1000);
+      } catch (error) {
+        console.error('Error getting location:', error);
+      }
+    };
+
+    getCurrentLocation();
+  }, []);
 
 
   // FUNCTIONS FOR SCROLLABLE VIEW
@@ -90,21 +152,8 @@ export default function HomeScreen() {
 
 
   // FUNCTIONS FOR CURRENT LOCATION, SPACES LOCATIONS
-  const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28626, longitude: -97.73937 });
-  const [studySpaceMarkers, setStudySpaceMarkers] = useState([]);
-  const [studySpaces, setStudySpaces] = useState([]);
-
-  useEffect(() => {
-    const fetchStudySpaces = async () => {
-      try {
-        const spaces = await getAllStudySpaces(); // Already returns full data
-        setStudySpaces(spaces);
-      } catch (error) {
-        console.error('Error fetching study spaces:', error);
-      }
-    };
-    fetchStudySpaces();
-  }, []);
+  // const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28626, longitude: -97.73937 });
+  const [studySpaceMarkers, setStudySpaceMarkers] = useState<StudySpace[]>([]);
 
 
 
@@ -114,16 +163,7 @@ export default function HomeScreen() {
     const fetchStudySpaces = async () => {
       try {
         const spaces = await getAllStudySpaces();
-        const formattedMarkers = spaces.map((space) => ({
-          id: space.id,
-          coordinate: {
-            latitude: space.location[0],
-            longitude: space.location[1]
-          },
-          name: space.name,
-          address: space.address,
-        }));
-        setStudySpaceMarkers(formattedMarkers);
+        setStudySpaceMarkers(spaces);
       } catch (error) {
         console.error('Error fetching study spaces:', error);
       }
@@ -131,6 +171,7 @@ export default function HomeScreen() {
 
     fetchStudySpaces();
   }, []);
+
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "studySpaces"), (snapshot) => {
@@ -169,7 +210,6 @@ export default function HomeScreen() {
     requestLocationPermission();
   }, []);
 
-
   // FUNCTION TO CALL AND CREATE LARGE CARD
   const displayLargeCard = (space) => {
     router.push({
@@ -207,25 +247,27 @@ export default function HomeScreen() {
         <SearchWithFilter></SearchWithFilter>
 
         {/* Map */}
-        <MapView
-          style={styles.map}
-          initialRegion={{
-            latitude: currentLocation.latitude,
-            longitude: currentLocation.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}>
-
-          {/* Current Location - Melissa */}
-          {currentLocation &&
-            <Marker
-              coordinate={currentLocation}>
-              <Image 
-                source={require('../../assets/images/pfp_melissa.png')}
-                style={styles.pfpIcon} 
-              />
-            </Marker>
-          }
+        {region && (
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            initialRegion={region}
+            showsUserLocation={false}
+            showsMyLocationButton={false}
+          >
+            {/* Current Location Marker */}
+            {currentLocation && (
+              <Marker
+                coordinate={{
+                  latitude: currentLocation.latitude,
+                  longitude: currentLocation.longitude,
+                }}
+              >
+                <View style={styles.currentLocationMarker}>
+                  <Text style={styles.currentLocationText}>Me</Text>
+                </View>
+              </Marker>
+            )}
 
           {/* Location - Vaishnuv */}
           <Marker
@@ -290,6 +332,41 @@ export default function HomeScreen() {
             />
           </Marker>
 
+            {/* Followed Users */}
+            {userLocations.map((userLocation) => {
+              if (!userLocation.location) return null;
+
+              const isInactive = Date.now() - userLocation.location.timestamp > 30 * 60 * 1000; // 30 minutes
+              const markerStyle = {
+                ...styles.markerContainer,
+                backgroundColor: isInactive ? '#808080' : '#DC8B47',
+              };
+
+              return (
+                <Marker
+                  key={userLocation.userId}
+                  coordinate={{
+                    latitude: userLocation.location.latitude,
+                    longitude: userLocation.location.longitude,
+                  }}
+                >
+                  <View style={markerStyle}>
+                    <Text style={styles.markerText}>
+                      {userLocation.displayName.split(' ').map(part => part[0]).join('').toUpperCase()}
+                    </Text>
+                  </View>
+                  <Callout>
+                    <View style={styles.callout}>
+                      <Text style={styles.calloutText}>{userLocation.displayName}</Text>
+                      <Text style={styles.calloutSubtext}>
+                        {isInactive ? 'Inactive - ' : ''}
+                        Last seen: {new Date(userLocation.location.timestamp).toLocaleTimeString()}
+                      </Text>
+                    </View>
+                  </Callout>
+                </Marker>
+              );
+            })}
 
           {/* Study Space Markers from Firestore */}
           {studySpaces.map((space) => (
@@ -317,8 +394,9 @@ export default function HomeScreen() {
               </Callout>
             </Marker>
           ))}
-          </MapView>
 
+          </MapView>
+        )}
 
         {/* List of Study Space Small Cards */}
         <BottomSheet
@@ -332,12 +410,14 @@ export default function HomeScreen() {
           }}
         >
           <BottomSheetView style={styles.scrollContent}>
-            <ScrollView
-            >
-              {studySpaces.map((space) => (
-                <SmallCard 
+            <ScrollView>
+              {studySpaceMarkers.map((space) => (
+                <SmallCard
                   key={space.id}
-                  space={space}
+                  space={{
+                    ...space,
+                    images: space.images || []
+                  }}
                 />
               ))}
             </ScrollView>
@@ -391,9 +471,9 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   map: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
   },
-
   scrollContent: {
     flex: 1,
     padding: 8,
@@ -404,5 +484,58 @@ const styles = StyleSheet.create({
     height: 40,
   }
 
-  
+  markerContainer: {
+    backgroundColor: '#DC8B47',
+    borderRadius: 20,
+    padding: 8,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  markerText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  calloutText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  calloutSubtext: {
+    fontSize: 12,
+    color: '#666',
+  },
+  container: {
+    flex: 1,
+  },
+  callout: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    maxWidth: 200,
+  },
+  calloutTitle: {
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  map: {
+    flex: 1,
+  },
+  scrollContent: {
+    flex: 1,
+    padding: 8,
+    marginBottom: 130,
+  },
+
+  currentLocationMarker: {
+    backgroundColor: '#DC8B47',
+    borderRadius: 20,
+    padding: 8,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  currentLocationText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
 });

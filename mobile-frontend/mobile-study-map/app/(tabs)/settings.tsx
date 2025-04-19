@@ -1,26 +1,56 @@
-import { View, Image, Text, StyleSheet, TouchableOpacity, Button } from 'react-native';
+import { View, Image, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSession } from '@/contexts/SessionContext';
 import React from 'react';
 
 export default function SettingsScreen() {
-
   const router = useRouter();
-
   const { user, logout } = useAuth();
+  const { sessionId, leaveSession } = useSession();
 
   const name = user.name || user.email.split('@')[0]; // Fallback to email if displayName is not available
 
-  const handleSignOut = () => {
-    logout();
-    router.replace('/login');
-  };
+  const handleSignOut = async () => {
+    if (sessionId) {
+      Alert.alert(
+        "Active Session",
+        "Logging out will end your current session. Do you want to continue?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          {
+            text: "End Session & Logout",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await leaveSession();
+                await logout();
+                router.replace('/login');
+              } catch (error) {
+                console.error('Error during logout:', error);
+                Alert.alert('Error', 'Failed to logout. Please try again.');
+              }
+            }
+          }
+        ]
+      );
+      return;
+    }
 
-  // console.log(user); // Check if user is defined and has the expected properties
+    try {
+      await logout();
+      router.replace('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      Alert.alert('Error', 'Failed to sign out. Please try again.');
+    }
+  };
 
   return (
     <View style={styles.container}>
-
       <Image 
         source={require('../../assets/images/pfp_melissa.png')}
         style={styles.pfp} 
@@ -28,9 +58,6 @@ export default function SettingsScreen() {
 
       <Text style={styles.titleText}>{name}'s Settings </Text>
 
-      {/* four buttons: preferences, saved spaces, following, and log out */}
-
-      {/* Button going to preferred features */}
       <TouchableOpacity 
         style={styles.settingsButton}
         onPress={() => router.push('/preferredfeatures')}
@@ -44,7 +71,6 @@ export default function SettingsScreen() {
         </View>
       </TouchableOpacity>
 
-      {/* Button going to saved spaces */}
       <TouchableOpacity
         style={styles.settingsButton}
         onPress={() => router.push('/savedspaces')}
@@ -59,7 +85,8 @@ export default function SettingsScreen() {
       </TouchableOpacity>
 
       {/* Button going to study log */}
-      {/* <TouchableOpacity
+      {/* 
+      <TouchableOpacity
         style={styles.settingsButton}
         onPress={() => router.push('/studylog')}
       >
@@ -72,7 +99,6 @@ export default function SettingsScreen() {
         </View>
       </TouchableOpacity> */}
 
-      {/* Button going to following */}
       <TouchableOpacity 
         style={styles.settingsButton}
         onPress={() => router.push('/follow')}
@@ -86,12 +112,11 @@ export default function SettingsScreen() {
         </View>
       </TouchableOpacity>
 
-      {/* Button to logout */}
       <TouchableOpacity 
         style={styles.settingsButton}
         onPress={handleSignOut}
       >
-      <View style={styles.buttonContent}> 
+        <View style={styles.buttonContent}> 
           <Text style={styles.buttonText}>Logout</Text>
           <Image
             source={require('../../assets/images/arrow_forward.png')}
@@ -99,9 +124,8 @@ export default function SettingsScreen() {
           />
         </View>
       </TouchableOpacity>
-
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({

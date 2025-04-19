@@ -11,13 +11,14 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { SessionProvider } from '@/contexts/SessionContext';
+import { LocationProvider } from '@/contexts/LocationContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  // const { user } = useAuth();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -34,55 +35,59 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
+      <SessionProvider>
+        <LocationProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
 
-          {/* All pages under (tabs) handled here */}
-          <Stack.Screen 
-            name="(tabs)" 
-            options={{ headerShown: false }} 
-            screenOptions={{
-              animation: 'slide_from_left',
-            }}
-          />
-          <Stack.Screen name="+not-found" />
-          
-          {/* Added a screen per other external page */}
-          <Stack.Screen
-            name="preferredfeatures"
-            options={{ headerShown: false }} // Removes the header
-          />
-          <Stack.Screen
-            name="savedspaces"
-            options={{ headerShown: false }} // Removes the header
-          />
-          <Stack.Screen
-            name="studylog"
-            options={{ headerShown: false }} // Removes the header
-          />
-          <Stack.Screen
-            name="largecard"
-            options={{ headerShown: false }} // Removes the header
-          />
-          <Stack.Screen
-            name="login"
-            options={{ headerShown: false }} // Removes the header
-          />
-          <Stack.Screen
-            name="filters"
-            options={{ headerShown: false }} // Removes the header
-          />
+              {/* All pages under (tabs) handled here */}
+              <Stack.Screen 
+                name="(tabs)" 
+                options={{ 
+                  headerShown: false,
+                  animation: 'slide_from_left'
+                }} 
+              />
+              <Stack.Screen name="+not-found" />
+              
+              {/* Added a screen per other external page */}
+              <Stack.Screen
+                name="preferredfeatures"
+                options={{ headerShown: false }} // Removes the header
+              />
+              <Stack.Screen
+                name="savedspaces"
+                options={{ headerShown: false }} // Removes the header
+              />
+              <Stack.Screen
+                name="studylog"
+                options={{ headerShown: false }} // Removes the header
+              />
+              <Stack.Screen
+                name="largecard"
+                options={{ headerShown: false }} // Removes the header
+              />
+              <Stack.Screen
+                name="login"
+                options={{ headerShown: false }} // Removes the header
+              />
+              <Stack.Screen
+                name="filters"
+                options={{ headerShown: false }} // Removes the header
+              />
 
-          
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+              
+            </Stack>
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          </ThemeProvider>
+        </LocationProvider>
+      </SessionProvider>
     </AuthProvider>
   );
 }
 
 function AppNavigator() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
     // Show a loading spinner while Firebase initializes
