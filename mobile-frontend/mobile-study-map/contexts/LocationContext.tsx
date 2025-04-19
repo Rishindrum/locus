@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 import { doc, updateDoc, onSnapshot, collection, getDoc } from 'firebase/firestore';
 import { db } from '../backend/firebaseConfig';
 import { useAuth } from './AuthContext';
+import { getUserProfile } from '../backend/backendFunctions'; // Assuming this function is defined elsewhere
 
 interface LocationData {
   latitude: number;
@@ -13,7 +14,7 @@ interface LocationData {
 
 interface UserLocation {
   userId: string;
-  displayName: string;
+  name: string;
   location: LocationData | null;
 }
 
@@ -24,7 +25,7 @@ interface LocationContextType {
 }
 
 interface AuthContextType {
-  user: { uid: string; displayName: string } | null;
+  user: { uid: string; name: string } | null;
 }
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
@@ -93,38 +94,56 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Listen to followed users' locations
   useEffect(() => {
     if (!user?.uid) return;
 
-    // Get the list of users we're following
-    const followingRef = collection(db, 'users', user.uid, 'following');
-    const unsubscribe = onSnapshot(followingRef, async (snapshot) => {
-      const locations: UserLocation[] = [];
-      
-      // Get all followed users' documents
-      const followedUserPromises = snapshot.docs.map(async (followDoc) => {
-        const followedUserId = followDoc.id;
-        const userRef = doc(db, 'users', followedUserId);
-        const userSnap = await getDoc(userRef);
-        const userData = userSnap.data();
-        
-        if (userData) {
-          // Include user even if they don't have a current location
-          locations.push({
-            userId: followedUserId,
-            displayName: userData.displayName || 'Unknown',
-            location: userData.location || null,
-          });
+    let unsubscribes: (() => void)[] = [];
+    let isMounted = true;
+
+    async function setupLocationListeners() {
+      try {
+        // Get current user's profile and following list
+        const userProfile = await getUserProfile(user.uid);
+        const following: string[] = userProfile?.following || [];
+
+        if (following.length === 0) {
+          if (isMounted) setUserLocations([]);
+          return;
         }
-      });
 
-      // Wait for all user data to be fetched
-      await Promise.all(followedUserPromises);
-      setUserLocations(locations);
-    });
+        // Listen to each followed user's location in real time
+        const newUnsubscribes = following.map((followedUserId) => {
+          const userRef = doc(db, 'users', followedUserId);
+          return onSnapshot(userRef, (userSnap) => {
+            const userData = userSnap.data();
+            if (!userData) return;
+            setUserLocations((prev) => {
+              // Remove any previous entry for this user
+              const filtered = prev.filter(u => u.userId !== followedUserId);
+              return [
+                ...filtered,
+                {
+                  userId: followedUserId,
+                  name: userData.name || 'Unknown',
+                  location: userData.location || null,
+                }
+              ];
+            });
+          });
+        });
+        unsubscribes = newUnsubscribes;
+        console.log('Locations: ', userLocations);
+      } catch (error) {
+        console.error('Error setting up location listeners:', error);
+        if (isMounted) setUserLocations([]);
+      }
+    }
 
-    return () => unsubscribe();
+    setupLocationListeners();
+    return () => {
+      isMounted = false;
+      unsubscribes.forEach(unsub => unsub && unsub());
+    };
   }, [user?.uid]);
 
   return (
