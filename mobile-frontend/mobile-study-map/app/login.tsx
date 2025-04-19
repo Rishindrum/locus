@@ -4,13 +4,19 @@ import { View, TextInput, Image, Text, StyleSheet, TouchableOpacity } from 'reac
 import { useRouter } from 'expo-router';
 import {useAuth} from '../contexts/AuthContext';
 
+// For uploading pfp for new users
+import * as ImagePicker from 'expo-image-picker';
+import { uploadProfilePicture, saveProfilePictureURL } from '@/backend/backendFunctions';
+
+
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignUpMode, setIsSignUpMode] = useState(false);
   const router = useRouter();
-  const {login, logout, register} = useAuth();
+  const { login, logout, register, user } = useAuth();
+
 
   const handleAuthAction = async () => {
     try {
@@ -38,6 +44,38 @@ const LoginScreen = () => {
     }
   };
 
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    // Request permission if not already granted
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Sorry, we need camera roll permissions to make this work!');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setSelectedImage(uri);
+
+      console.log(`USER: ${user.uid}`);
+      console.log(`URI: ${uri}`);
+
+
+      const downloadURL = await uploadProfilePicture(user.uid, uri);
+      await saveProfilePictureURL(user.uid, downloadURL);
+      console.log(`USER: ${user.uid}`);
+    }
+  };
+
+
   return (
     <View style={styles.container}>
 
@@ -54,13 +92,24 @@ const LoginScreen = () => {
       </Text>
 
       {isSignUpMode && (
+          <TouchableOpacity onPress={pickImage} style={styles.imageButton}>
+            {selectedImage ? (
+              <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+            ) : (
+              <Text style={styles.submitImageText}>Choose Profile Picture</Text>
+            )}
+          </TouchableOpacity>
+      )}
+
+      { isSignUpMode &&
         <TextInput
           placeholder="Name"
           value={name}
           onChangeText={setName}
           style={styles.input}
         />
-      )}
+      }
+
       <TextInput
         placeholder="Email"
         value={email}
@@ -138,6 +187,22 @@ const styles = StyleSheet.create({
     width: 130,
     height: 130,
   },
+
+  imagePreview: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+    borderRadius: 100,
+  },
+  submitImageText: {
+    width: "90%",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#DC8B47',
+    padding: 15,
+    marginBottom: 15,
+    color: "#DC8B47",
+  }
 
 });
 

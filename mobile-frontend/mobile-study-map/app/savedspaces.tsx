@@ -1,10 +1,37 @@
-import { View, ScrollView, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import SmallCard from '../components/SmallCard';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSavedStudySpaces } from '@/backend/backendFunctions';
+import { useEffect, useState } from 'react';
 
 export default function SavedSpacesScreen() {
 
     const router = useRouter();
+
+    const [savedSpaces, setSavedSpaces] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const { user } = useAuth(); 
+
+    useEffect(() => {
+      const fetchSavedSpaces = async () => {
+        try {
+          const data = await getSavedStudySpaces(user.uid);
+          setSavedSpaces(data);
+        } catch (error) {
+          console.error('Error fetching saved spaces:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchSavedSpaces();
+    }, [user.uid]);
+
+    if (loading) {
+      return <ActivityIndicator size="large" color="#DC8B47" />;
+    }
 
     return (
         <View style={styles.container}>
@@ -20,48 +47,21 @@ export default function SavedSpacesScreen() {
                 <Text style={styles.titleText}>Saved Spaces</Text>
             </View>
 
+            {(savedSpaces.length === 0) && 
+              <Text style={{ padding: 20 }}>You haven't saved any study spaces yet.</Text>
+            }
 
             
           <ScrollView style={styles.cardContainer}>
-              <SmallCard
-                name="PCL"
-                todayHrs="24/7"
-                distance={0.6}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/pcl.jpg"
-                features="something"
-              />
-              <SmallCard
-                name="Welch"
-                todayHrs="8 AM-4:30 PM"
-                distance={0.2}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/welch.png"
-                features="something"
-              />
-              <SmallCard
-                name="Gates Dell Complex"
-                todayHrs="24/7"
-                distance={0.1}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/gdc.png"
-                features="something"
-              />
-              <SmallCard
-                name="NRG Productivity Center"
-                todayHrs="9 AM-5 PM"
-                distance={0.4}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/nrg.jpg"
-                features="something"
-              />
+              
+            {savedSpaces.map((space) => (
+                <SmallCard 
+                  key={space.spaceId}
+                  space={space}
+                />
+              ))}
 
-              <SmallCard
-                name="Moody (DMC)"
-                todayHrs="7 AM-11 PM"
-                distance={0.8}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/moody.png"
-                features="something"
-              />
-
-
-            </ScrollView>
+          </ScrollView>
 
         </View>
   );

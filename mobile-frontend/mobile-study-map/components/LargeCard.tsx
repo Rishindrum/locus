@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { getStudySpace } from '@/backend/backendFunctions';
 import AutoScrollCarousel from './AutoScrollCarousel';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-
+import { saveStudySpace, unsaveStudySpace } from '@/backend/backendFunctions';
+import { useAuth } from '@/contexts/AuthContext';
 
 type FeatureRatings = {
   aesthetics: {
@@ -65,7 +66,7 @@ const NumericalRatingText = ({ label, value, lowestLabel, highestLabel, icon }) 
     { value >= 1.2 && value < 2 && <Text style={styles.label}> Slightly {lowestLabel} </Text> }
     { value >= 2 && value < 2.6 && <Text style={styles.label}> Slightly {highestLabel} </Text>  }
     { value >= 2.6 && value < 3.2 && <Text style={styles.label}> Somewhat {highestLabel} </Text>  }
-    { value >= 3.2 && value < 4 && <Text style={styles.label}> Very {highestLabel} </Text> }
+    { value >= 3.2 && value <= 4 && <Text style={styles.label}> Very {highestLabel} </Text> }
     </Text>
   </View>
 );
@@ -79,8 +80,20 @@ const openInGoogleMaps = (latitude: number, longitude: number) => {
 
 export default function LargeCard({ spaceId }) {
 
+  const { user } = useAuth();
   const router = useRouter();
   const [space, setSpace] = useState<StudySpace>();
+
+  const [isSaved, setSaved] = useState(false);
+  
+  const toggleSave = () => {
+    if (!isSaved) {
+      saveStudySpace(user.uid, spaceId); 
+    } else {
+      unsaveStudySpace(user.uid, spaceId); 
+    }
+    setSaved(prev => !prev);
+  }
 
   useEffect(() => {
     const fetchStudySpaces = async () => {
@@ -111,15 +124,6 @@ export default function LargeCard({ spaceId }) {
           <Text style={styles.titleText}>{space.name}</Text>
       </View>
 
-      {/* Button to get directions */}
-      <TouchableOpacity
-        style={styles.orangeTag}
-        onPress={() => openInGoogleMaps(space.location[0], space.location[1])}
-      >
-        <Text
-          style={{ color: "white" }}
-        >Get Directions</Text>
-      </TouchableOpacity>
 
       {/* Container for hours, and wifi and outlet icons */}
       <View style={styles.iconcontainer}>
@@ -128,8 +132,25 @@ export default function LargeCard({ spaceId }) {
         <Text style={styles.hours}>Today's Hours: {space.hours}</Text>
       </View>
 
+
+      {/* Button to get directions + saved button */}
+      <View style={styles.directionContainer}> 
+        <TouchableOpacity
+          style={styles.directionButton}
+          onPress={() => openInGoogleMaps(space.location[0], space.location[1])}
+        >
+          <Text
+            style={{ color: "white" }}
+          >Get Directions</Text>
+        </TouchableOpacity>
+
+        <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={30} color={isSaved ? "#DC8B47" : "#DC8B47"} onPress={toggleSave} />
+      </View>
+
+
       {/* Container for images (scroll horizontal) */}
       <AutoScrollCarousel images={space.images} />
+
 
       {/* Categorical (labels) */}
       <Text style={styles.featureLabel}> Lighting </Text>
@@ -228,12 +249,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
+    marginBottom: 10,
   },
   titleText: {
     fontSize: 26,
     fontWeight: 'bold',
     color: "#DC8B47",
-    marginBottom: 10,
   },
   arrowIcon: {
     width: 30,
@@ -254,6 +275,21 @@ const styles = StyleSheet.create({
   },
   iconcontainer: {
     flexDirection: "row",
+  },
+
+  directionContainer: {
+    flexDirection: "row", 
+    alignItems: "center",
+  },
+  directionButton: {
+    width: "90%",
+    padding: 8,
+    marginVertical: 4,
+    marginHorizontal: 5,
+    backgroundColor: "#DC8B47",
+    borderRadius: 10,
+    alignItems: "center",
+    color: "white",
   },
 
 

@@ -20,9 +20,12 @@ import { SearchBar } from 'react-native-elements';
 
 // For backend
 import { useRouter } from 'expo-router';
-import { getAllStudySpaces } from '@/backend/backendFunctions';
 import { getUserActiveSession } from '@/backend/backendFunctions';
 import { useSession } from '@/contexts/SessionContext';
+import { getAllStudySpaces, getStudySpace } from '@/backend/backendFunctions';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/backend/firebaseConfig';
+
 
 // Type Definition for Study Space Schema
 interface LocationData {
@@ -148,14 +151,14 @@ export default function HomeScreen() {
 
   // FUNCTIONS FOR CURRENT LOCATION, SPACES LOCATIONS
   // const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28626, longitude: -97.73937 });
-  const [studySpaceMarkers, setStudySpaceMarkers] = useState<StudySpace[]>([]);
+  const [studySpaces, setStudySpaces] = useState<StudySpace[]>([]);
 
   // Fetch and display the study space markers
   useEffect(() => {
     const fetchStudySpaces = async () => {
       try {
         const spaces = await getAllStudySpaces();
-        setStudySpaceMarkers(spaces);
+        setStudySpaces(spaces);
       } catch (error) {
         console.error('Error fetching study spaces:', error);
       }
@@ -163,6 +166,25 @@ export default function HomeScreen() {
 
     fetchStudySpaces();
   }, []);
+
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "studySpaces"), (snapshot) => {
+      const spaces = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setStudySpaces(spaces);
+    });
+  
+    return () => unsubscribe();
+  }, []);
+
+  // Helper function to parse location string from Firestore
+  // const parseLocationString = (locationStr) => {
+  //   const [lat, lng] = locationStr
+  //     .replace(/[\[\]]/g, '')
+  //     .split(',')
+  //     .map(Number);
+  //   return { latitude: lat, longitude: lng };
+  // };
 
   const requestLocationPermission = async () => {
     try {
@@ -183,12 +205,11 @@ export default function HomeScreen() {
     requestLocationPermission();
   }, []);
 
-  // console.log('Cur User:', user);
-
-  // FUNCTION TO CREATE LARGE CARDS
-
-  const callLargeCard = () => {
-    return <LargeCard></LargeCard>;
+  // FUNCTION TO CALL AND CREATE LARGE CARD
+  const displayLargeCard = (space) => {
+    router.push({
+      pathname: `./largecard/${space.spaceId}`,
+    });
   };
 
   // SEARCH BAR
@@ -211,6 +232,25 @@ export default function HomeScreen() {
     setJoinedSessionStart(sessionStart);
   };
 
+
+  const [zoomLevel, setZoomLevel] = useState(15); // default
+
+  const handleRegionChangeComplete = (region) => {
+    const zoom = Math.round(Math.log(360 / region.longitudeDelta) / Math.LN2);
+    setZoomLevel(zoom);
+  };
+
+  const bringSpaceToTop = (spaceId: string) => {
+    setStudySpaces((prevSpaces) => {
+      const index = prevSpaces.findIndex(space => space.id === spaceId);
+      if (index === -1) return prevSpaces;
+  
+      const selected = prevSpaces[index];
+      const rest = prevSpaces.filter((_, i) => i !== index);
+      return [selected, ...rest];
+    });
+  };
+  
   return (
     <View style={{ flex: 1 }}>
       {/* SEARCH BAR */}
@@ -241,71 +281,64 @@ export default function HomeScreen() {
 
           {/* Location - Vaishnuv */}
           <Marker
-            coordinate={{ latitude: 30.288075, longitude: -97.735714 }}
-          >
-            <Image
+            coordinate={{latitude: 30.288075, longitude: -97.735714}}>
+            <Image 
               source={require('../../assets/images/pfp_vaishnuv.png')}
-              style={{ width: 48, height: 48 }}
+              style={styles.pfpIcon} 
             />
           </Marker>
 
           {/* Location - Shruti */}
           <Marker
-            coordinate={{ latitude: 30.28668, longitude: -97.73782 }}
-          >
-            <Image
+            coordinate={{latitude: 30.28668, longitude: -97.73782}}>
+            <Image 
               source={require('../../assets/images/pfp_shruti.png')}
-              style={{ width: 50, height: 50 }}
+              style={styles.pfpIcon} 
             />
           </Marker>
 
           {/* Location - Rishindra */}
           <Marker
-            coordinate={{ latitude: 30.285876, longitude: -97.739407 }}
-          >
-            <Image
+            coordinate={{latitude: 30.285876, longitude: -97.739407}}>
+            <Image 
               source={require('../../assets/images/pfp_rishindra.png')}
-              style={{ width: 50, height: 50 }}
+              style={styles.pfpIcon} 
             />
           </Marker>
 
           {/* Location - Vincent */}
           <Marker
-            coordinate={{ latitude: 30.288491, longitude: -97.743310 }}
-          >
-            <Image
+            coordinate={{latitude: 30.288491, longitude: -97.743310}}>
+            <Image 
               source={require('../../assets/images/pfp_vincent.png')}
-              style={{ width: 50, height: 50 }}
+              style={styles.pfpIcon} 
             />
           </Marker>
 
           {/* Location - Drishti */}
           <Marker
-            coordinate={{ latitude: 30.289997, longitude: -97.740532 }}
-          >
-            <Image
+            coordinate={{latitude: 30.289997, longitude: -97.740532}}>
+            <Image 
               source={require('../../assets/images/pfp_drishti.png')}
-              style={{ width: 50, height: 50 }}
+              style={styles.pfpIcon} 
             />
           </Marker>
 
           {/* Location - Venkat */}
           <Marker
-            coordinate={{ latitude: 30.28417, longitude: -97.73783 }}
-          >
-            <Image
+            coordinate={{latitude: 30.28417, longitude: -97.73783}}>
+            <Image 
               source={require('../../assets/images/pfp_venkat.png')}
-              style={{ width: 50, height: 50 }}
+              style={styles.pfpIcon} 
             />
           </Marker>
 
           {/* Location - Ishita */}
           <Marker
-            coordinate={{ latitude: 30.28876, longitude: -97.73758 }}
-          >
-            <Image
+            coordinate={{latitude: 30.28876, longitude: -97.73758}}>
+            <Image 
               source={require('../../assets/images/pfp_ishita.png')}
-              style={{ width: 50, height: 50 }}
+              style={styles.pfpIcon} 
             />
           </Marker>
 
@@ -355,28 +388,33 @@ export default function HomeScreen() {
           })}
 
           {/* Study Space Markers from Firestore */}
-          {studySpaceMarkers.map((space) => (
-            space.location ? (
-              <Marker
-                key={space.id}
-                coordinate={{
-                  latitude: space.location[0],
-                  longitude: space.location[1],
+          {studySpaces.map((space) => (
+            <Marker
+              key={space.spaceId}
+              coordinate={ { latitude: space.location[0], longitude: space.location[1]} }
+              title={space.name}
+              description={space.address}
+              // image={require('../../assets/images/pin.png')}
+              onPress={() => bringSpaceToTop(space.spaceId)}
+            >
+              <Image
+                source={require('../../assets/images/pin.png')}
+                style={{
+                  width: zoomLevel * 2, // scale as desired
+                  height: zoomLevel * 2,
+                  resizeMode: 'contain',
                 }}
-                title={space.name}
-                description={space.address}
-              >
-                <Callout>
-                  <View style={styles.callout}>
-                    <Text style={styles.calloutTitle}>{space.name}</Text>
-                    <Text>{space.address}</Text>
-                  </View>
-                </Callout>
-              </Marker>
-            ) : null
+              />
+              <Callout>
+                <View style={styles.callout}>
+                  <Text style={styles.calloutTitle}>{space.name}</Text>
+                  <Text>{space.address}</Text>
+                </View>
+              </Callout>
+            </Marker>
           ))}
-        </MapView>
-      )}
+          </MapView>
+        )}
 
       {/* List of Study Space Small Cards */}
       <BottomSheet
@@ -391,7 +429,7 @@ export default function HomeScreen() {
       >
         <BottomSheetView style={styles.scrollContent}>
           <ScrollView>
-            {studySpaceMarkers.map((space) => (
+            {studySpaces.map((space) => (
               <SmallCard
                 key={space.id}
                 space={{
@@ -400,43 +438,6 @@ export default function HomeScreen() {
                 }}
               />
             ))}
-
-
-              {/* <SmallCard
-                name="PCL"
-                todayHrs="24/7"
-                distance={0.6}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/pcl.jpg"
-                features="something"
-              />
-              <SmallCard
-                name="Welch"
-                todayHrs="8 AM-4:30 PM"
-                distance={0.2}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/welch.png"
-                features="something"
-              />
-              <SmallCard
-                name="Gates Dell Complex"
-                todayHrs="24/7"
-                distance={0.1}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/gdc.png"
-                features="something"
-              />
-              <SmallCard
-                name="NRG Productivity Center"
-                todayHrs="9 AM-5 PM"
-                distance={0.4}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/nrg.jpg"
-                features="something"
-              />
-              <SmallCard
-                name="Moody (DMC)"
-                todayHrs="7 AM-11 PM"
-                distance={0.8}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/moody.png"
-                features="something"
-              /> */}
           </ScrollView>
         </BottomSheetView>
       </BottomSheet>
@@ -484,26 +485,22 @@ const styles = StyleSheet.create({
   generalMap: {
     flex: 1,
   },
-  container: {
-    flex: 1,
-  },
-  callout: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    maxWidth: 200,
-  },
   calloutTitle: {
     fontWeight: 'bold',
     marginBottom: 5,
   },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  scrollContent: {
-    flex: 1,
-    padding: 8,
-    marginBottom: 130,
+  // map: {
+  //   width: '100%',
+  //   height: '100%',
+  // },
+  // scrollContent: {
+  //   flex: 1,
+  //   padding: 8,
+  //   marginBottom: 90,
+  // },
+  pfpIcon: {
+    width: 40,
+    height: 40,
   },
 
   markerContainer: {
@@ -534,10 +531,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     maxWidth: 200,
-  },
-  calloutTitle: {
-    fontWeight: 'bold',
-    marginBottom: 5,
   },
   map: {
     flex: 1,

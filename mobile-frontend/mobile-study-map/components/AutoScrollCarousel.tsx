@@ -60,7 +60,7 @@ const AutoScrollCarousel = ({ images }) => {
 
         return next;
       });
-    }, 4000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);

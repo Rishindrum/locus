@@ -48,26 +48,6 @@ export const updateUserProfile = async (userId, userData) => {
   }
 };
 
-// Add/Remove saved space for user
-export const toggleSavedSpace = async (userId: string, spaceId: string, isSaving = true) => {
-  try {
-    const userRef = doc(db, "users", userId);
-    if (isSaving) {
-      await updateDoc(userRef, {
-        savedSpaces: arrayUnion(spaceId)
-      });
-    } else {
-      await updateDoc(userRef, {
-        savedSpaces: arrayRemove(spaceId)
-      });
-    }
-    return { success: true };
-  } catch (error) {
-    console.error("Error updating saved spaces:", error);
-    throw error;
-  }
-};
-
 // Follow/Unfollow a user
 export const toggleFollowUser = async (userId: string, targetUserId: string, isFollowing = true) => {
   try {
@@ -108,6 +88,36 @@ export const fetchAllUsersExceptCurrent = async (currentUserId: string) => {
   }
 };
 
+// Upload profile photo for new user to Firebase Storage
+export const uploadProfilePicture = async (userId: string, imageUri: string) => {
+  const imageRef = ref(storage, `profilePictures/${userId}.jpg`);
+
+  const imageData = await FileSystem.readAsStringAsync(imageUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  const blob = await fetch(`data:image/jpeg;base64,${imageData}`).then(res => res.blob());
+
+  await uploadBytes(imageRef, blob);
+  const downloadURL = await getDownloadURL(imageRef);
+  return downloadURL;
+};
+
+// Save new user's pfp URL into Firestore
+export const saveProfilePictureURL = async (userId: string, downloadURL: string) => {
+  try {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+      pfp: downloadURL,
+    });
+  } catch (error) {
+    console.error("Error saving profile picture URL to Firestore:", error);
+    throw error;
+  }
+};
+
+
+
 // ===== STUDY SPACES FUNCTIONS =====
 
 // Get all study spaces
@@ -141,6 +151,49 @@ export const getStudySpace = async (spaceId) => {
   }
 };
 
+// gets a user's saved spaces
+export const getSavedStudySpaces = async (userId) => {
+  try {
+    // Step 1: Get the user document
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error("User not found");
+    }
+
+    const savedSpaces = userSnap.data().savedSpaces || [];
+
+    if (savedSpaces.length === 0) {
+      return []; // No saved spaces
+    }
+
+    // Step 2: Query the studySpaces collection by spaceId
+    const studySpacesRef = collection(db, "studySpaces");
+
+    // Firestore limits `in` queries to 10 values at a time
+    const chunks = [];
+    for (let i = 0; i < savedSpaces.length; i += 10) {
+      chunks.push(savedSpaces.slice(i, i + 10));
+    }
+
+    const results = [];
+
+    for (const chunk of chunks) {
+      const q = query(studySpacesRef, where("spaceId", "in", chunk));
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach((doc) => {
+        results.push({ id: doc.id, ...doc.data() });
+      });
+    }
+
+    return results;
+  } catch (error) {
+    console.error("Error fetching saved study spaces:", error);
+    throw error;
+  }
+};
+
 // Create a new study space
 export const createStudySpace = async (userId, spaceData) => {
   try {
@@ -165,6 +218,32 @@ export const createStudySpace = async (userId, spaceData) => {
     return { success: true, spaceId };
   } catch (error) {
     console.error("Error creating study space:", error);
+    throw error;
+  }
+};
+
+// Save a study space
+export const saveStudySpace = async (userId, spaceId) => {
+  try {
+    await updateDoc(doc(db, "users", userId), {
+      savedSpaces: arrayUnion(spaceId)
+    });
+    return { success: true, spaceId };
+  } catch (error) {
+    console.error("Error saving study space:", error);
+    throw error;
+  }
+}
+
+// Unsave a study space
+export const unsaveStudySpace = async (userId, spaceId) => {
+  try {
+    await updateDoc(doc(db, "users", userId), {
+      savedSpaces: arrayRemove(spaceId)
+    });
+    return { success: true, spaceId };
+  } catch (error) {
+    console.error("Error unsaving study space:", error);
     throw error;
   }
 };

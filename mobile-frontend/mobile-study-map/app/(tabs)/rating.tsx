@@ -34,7 +34,7 @@ const RatingSlider = ({ label, value, lowestLabel, highestLabel, onValueChange }
 // Set up categories for easy changes
 const categories = [
   { name: "Lighting", options: ["Artificial", "Natural", "Dim", "Bright"] },
-  { name: "Seating Types", options: ["Couches", "Desks", "Comfy", "Hard"] },
+  { name: "Seating", options: ["Couches", "Desks", "Comfy", "Hard"] },
   { name: "Aesthetics", options: ["Dark Academia", "Minimalist", "Cozy", "Corporate"] },
 ];
 
@@ -130,6 +130,25 @@ const RatingForm = () => {
     });
   };
 
+
+  // Function to convert selected categorical options to the features to update (json object form)
+  const mapSelectedOptionsToFeatures = (selectedOptions: { [key: string]: string[] }) => {
+    const featuresUpdate: { [key: string]: number } = {};
+  
+    Object.entries(selectedOptions).forEach(([category, options]) => {
+      const formattedCategory = category.toLowerCase().replace(/\s+/g, '');
+      options.forEach(option => {
+        const formattedOption = option.toLowerCase().replace(/\s+/g, '_');
+        const key = `features.${formattedCategory}.${formattedOption}`;
+        featuresUpdate[key] = 1;
+      });
+    });
+  
+    return featuresUpdate;
+  };
+
+
+
   // Function to submit rating
   const handleSubmit = async () => {
     if (!selectedValue) {
@@ -143,26 +162,27 @@ const RatingForm = () => {
     // Fields to average
     const fieldsToAverage = ["features.noise", "features.outlets", "features.temp", "features.wifi", "features.cleanliness"];
 
+    // Numerical updates
     const averagedData = {};
     fieldsToAverage.forEach(field => {
       const oldValue = space[field] || 0;
-      const newValue = sliders[field as SliderField];
+      const newValue = sliders[field as SliderField] || 0;
       averagedData[field] = ((oldValue * numRatings) + newValue) / (numRatings + 1);
     });
 
-    // Merge in categories and comment
+    // Categorical updates
+    const categoryFeatures = mapSelectedOptionsToFeatures(selectedOptions);
+
+    // Merge in categories and comments
     const updatedData = {
       ...averagedData,
+      ...categoryFeatures, // include labeled categories
       numRatings: numRatings + 1,
-      // categories: newRatings.categories,
+      comment: text || "", // optional: store comments too
     };
-  
+
     try {
       await updateStudySpace(selectedValue, updatedData);
-      console.log(`selectedOptions: ${selectedOptions}`);
-      console.log(`text: ${text}`);
-      console.log(`sliders: ${sliders}`);
-
       console.log("Study space updated successfully.");
       
     } catch (error) {
