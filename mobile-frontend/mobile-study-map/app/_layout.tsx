@@ -75,6 +75,11 @@ export default function RootLayout() {
                 name="filters"
                 options={{ headerShown: false }} // Removes the header
               />
+              <Stack.Screen
+                name="follow"
+                options={{ headerShown: false }} // Removes the header
+              />
+
 
               
             </Stack>

@@ -11,7 +11,6 @@ import SearchWithFilter from '@/components/SearchWithFilter';
 // For geolocation
 import * as Location from 'expo-location';
 import { useLocation } from '@/contexts/LocationContext';
-import { useAuth } from '@/contexts/AuthContext';
 
 // For map
 import MapView, { Callout, Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
@@ -153,24 +152,7 @@ export default function HomeScreen() {
 
   // FUNCTIONS FOR CURRENT LOCATION, SPACES LOCATIONS
   // const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28626, longitude: -97.73937 });
-  const [studySpaceMarkers, setStudySpaceMarkers] = useState<StudySpace[]>([]);
-
-
-
-
-  // Fetch and display the study space markers
-  useEffect(() => {
-    const fetchStudySpaces = async () => {
-      try {
-        const spaces = await getAllStudySpaces();
-        setStudySpaceMarkers(spaces);
-      } catch (error) {
-        console.error('Error fetching study spaces:', error);
-      }
-    };
-
-    fetchStudySpaces();
-  }, []);
+  const [studySpaces, setStudySpaces] = useState<StudySpace[]>([]);
 
 
   useEffect(() => {
@@ -181,15 +163,6 @@ export default function HomeScreen() {
   
     return () => unsubscribe();
   }, []);
-
-  // Helper function to parse location string from Firestore
-  // const parseLocationString = (locationStr) => {
-  //   const [lat, lng] = locationStr
-  //     .replace(/[\[\]]/g, '')
-  //     .split(',')
-  //     .map(Number);
-  //   return { latitude: lat, longitude: lng };
-  // };
 
   const requestLocationPermission = async () => {
     try {
@@ -210,15 +183,7 @@ export default function HomeScreen() {
     requestLocationPermission();
   }, []);
 
-  // FUNCTION TO CALL AND CREATE LARGE CARD
-  const displayLargeCard = (space) => {
-    router.push({
-      pathname: `./largecard/${space.spaceId}`,
-    });
-  };
-
   // SEARCH BAR
-
   const [search, setSearch] = useState('');
 
 
@@ -411,7 +376,7 @@ export default function HomeScreen() {
         >
           <BottomSheetView style={styles.scrollContent}>
             <ScrollView>
-              {studySpaceMarkers.map((space) => (
+              {studySpaces.map((space) => (
                 <SmallCard
                   key={space.id}
                   space={{
@@ -482,7 +447,7 @@ const styles = StyleSheet.create({
   pfpIcon: {
     width: 40,
     height: 40,
-  }
+  },
 
   markerContainer: {
     backgroundColor: '#DC8B47',
@@ -505,27 +470,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
-  container: {
-    flex: 1,
-  },
-  callout: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    maxWidth: 200,
-  },
-  calloutTitle: {
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  map: {
-    flex: 1,
-  },
-  scrollContent: {
-    flex: 1,
-    padding: 8,
-    marginBottom: 130,
-  },
-
+  
   currentLocationMarker: {
     backgroundColor: '#DC8B47',
     borderRadius: 20,

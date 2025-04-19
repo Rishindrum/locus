@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Image, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchAllUsersExceptCurrent, getUserProfile, toggleFollowUser } from '@/backend/backendFunctions';
 import ActiveFollowerSessions from '../components/ActiveFollowerSessions';
+import { router } from 'expo-router';
+
 
 export default function FollowScreen() {
   const { user } = useAuth(); // Get the current authenticated user
@@ -67,6 +69,20 @@ export default function FollowScreen() {
 
   return (
     <View style={styles.container}>
+
+
+      {/* Container for the title and back arrow */}
+      <View style={styles.titleContainer}>
+          <TouchableOpacity onPress={() => router.back()}>
+              <Image
+                  source={require('../assets/images/arrow_back.png')}
+                  style={styles.arrowIcon} 
+              />
+          </TouchableOpacity>
+          <Text style={styles.titleText}>Find People to Follow</Text>
+      </View>
+
+
       <FlatList
         data={users}
         keyExtractor={(item) => item.id}
@@ -97,7 +113,8 @@ export default function FollowScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    paddingTop: 80,
+    padding: 25,
     backgroundColor: '#FFFBF5',
   },
   userItem: {
@@ -107,18 +124,21 @@ const styles = StyleSheet.create({
     padding: 16,
     marginVertical: 4,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "#DC8B47",
     elevation: 2,
   },
   userName: {
     fontSize: 16,
     fontWeight: '500',
+    color: "#DC8B47",
   },
   followButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#DC8B47',
   },
   unfollowButton: {
     backgroundColor: '#f44336',
@@ -132,4 +152,23 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: '#666',
   },
+
+  titleContainer: {
+    width: '90%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginBottom: 10,
+  },
+  titleText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: "#DC8B47",
+  },
+  arrowIcon: {
+    width: 30,
+    height: 30,
+    marginRight: 20,
+  },
+
 });

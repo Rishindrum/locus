@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 
 import Slider from '@react-native-community/slider';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { getAllStudySpaces, updateStudySpace } from '@/backend/backendFunctions';
+import { useLocalSearchParams } from 'expo-router';
 
 // Custom Slider Component
 const RatingSlider = ({ label, value, lowestLabel, highestLabel, onValueChange }) => (
@@ -66,9 +67,12 @@ const CategorySelection = ({ categoryName, label, options, selected, onValueChan
 
 const RatingForm = () => {
 
+  // Passed in from large card button to rate space
+  const { spaceId } = useLocalSearchParams<{ spaceId: string }>();
+
   // Set up selected study space
   const [open, setOpen] = useState(false);
-  const [selectedValue, setSelectedValue] = useState<string | null>(null);
+  const [selectedValue, setSelectedValue] = useState<string | null>(spaceId);
   const [items, setItems] = useState([]);
   const [studySpaces, setStudySpaces] = useState([]);
 

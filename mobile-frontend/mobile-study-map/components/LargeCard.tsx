@@ -133,7 +133,7 @@ export default function LargeCard({ spaceId }) {
       </View>
 
 
-      {/* Button to get directions + saved button */}
+      {/* Button to get directions button, rating button, & saved button */}
       <View style={styles.directionContainer}> 
         <TouchableOpacity
           style={styles.directionButton}
@@ -142,6 +142,15 @@ export default function LargeCard({ spaceId }) {
           <Text
             style={{ color: "white" }}
           >Get Directions</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.directionButton}
+          onPress={() => router.push({ pathname: '/(tabs)/rating', params: { spaceId: space.id } })}
+        >
+          <Text
+            style={{ color: "white" }}
+          >Rate This Space</Text>
         </TouchableOpacity>
 
         <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={30} color={isSaved ? "#DC8B47" : "#DC8B47"} onPress={toggleSave} />
@@ -282,7 +291,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   directionButton: {
-    width: "90%",
+    width: "44%",
     padding: 8,
     marginVertical: 4,
     marginHorizontal: 5,
