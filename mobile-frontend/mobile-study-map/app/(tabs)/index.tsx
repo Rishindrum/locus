@@ -21,6 +21,8 @@ import { SearchBar } from 'react-native-elements';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext'; // Importing the AuthContext for authentication
 import { getAllStudySpaces, getStudySpace } from '@/backend/backendFunctions';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/backend/firebaseConfig';
 
 
 // Type Definition for Study Space Schema
@@ -118,10 +120,6 @@ export default function HomeScreen() {
             latitude: space.location[0],
             longitude: space.location[1]
           },
-          coordinate: { 
-            latitude: space.location[0], 
-            longitude: space.location[1]
-          },
           name: space.name,
           address: space.address,
         }));
@@ -132,6 +130,15 @@ export default function HomeScreen() {
     };
 
     fetchStudySpaces();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "studySpaces"), (snapshot) => {
+      const spaces = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setStudySpaces(spaces);
+    });
+  
+    return () => unsubscribe();
   }, []);
 
   // Helper function to parse location string from Firestore
@@ -162,20 +169,36 @@ export default function HomeScreen() {
     requestLocationPermission();
   }, []);
 
-  console.log('Cur User:', user);
 
-
-  // FUNCTION TO CREATE LARGE CARDS
-
-  const callLargeCard = () => {
-    return(
-      <LargeCard></LargeCard>
-    );
+  // FUNCTION TO CALL AND CREATE LARGE CARD
+  const displayLargeCard = (space) => {
+    router.push({
+      pathname: `./largecard/${space.spaceId}`,
+    });
   };
 
   // SEARCH BAR
 
   const [search, setSearch] = useState('');
+
+
+  const [zoomLevel, setZoomLevel] = useState(15); // default
+
+  const handleRegionChangeComplete = (region) => {
+    const zoom = Math.round(Math.log(360 / region.longitudeDelta) / Math.LN2);
+    setZoomLevel(zoom);
+  };
+
+  const bringSpaceToTop = (spaceId: string) => {
+    setStudySpaces((prevSpaces) => {
+      const index = prevSpaces.findIndex(space => space.id === spaceId);
+      if (index === -1) return prevSpaces;
+  
+      const selected = prevSpaces[index];
+      const rest = prevSpaces.filter((_, i) => i !== index);
+      return [selected, ...rest];
+    });
+  };
   
   return (
       <View style={{ flex: 1 }}>
@@ -199,7 +222,7 @@ export default function HomeScreen() {
               coordinate={currentLocation}>
               <Image 
                 source={require('../../assets/images/pfp_melissa.png')}
-                style={{ width: 50, height: 50 }} 
+                style={styles.pfpIcon} 
               />
             </Marker>
           }
@@ -209,7 +232,7 @@ export default function HomeScreen() {
             coordinate={{latitude: 30.288075, longitude: -97.735714}}>
             <Image 
               source={require('../../assets/images/pfp_vaishnuv.png')}
-              style={{ width: 48, height: 48 }} 
+              style={styles.pfpIcon} 
             />
           </Marker>
 
@@ -218,7 +241,7 @@ export default function HomeScreen() {
             coordinate={{latitude: 30.28668, longitude: -97.73782}}>
             <Image 
               source={require('../../assets/images/pfp_shruti.png')}
-              style={{ width: 50, height: 50 }} 
+              style={styles.pfpIcon} 
             />
           </Marker>
 
@@ -227,7 +250,7 @@ export default function HomeScreen() {
             coordinate={{latitude: 30.285876, longitude: -97.739407}}>
             <Image 
               source={require('../../assets/images/pfp_rishindra.png')}
-              style={{ width: 50, height: 50 }} 
+              style={styles.pfpIcon} 
             />
           </Marker>
 
@@ -236,7 +259,7 @@ export default function HomeScreen() {
             coordinate={{latitude: 30.288491, longitude: -97.743310}}>
             <Image 
               source={require('../../assets/images/pfp_vincent.png')}
-              style={{ width: 50, height: 50 }} 
+              style={styles.pfpIcon} 
             />
           </Marker>
 
@@ -245,7 +268,7 @@ export default function HomeScreen() {
             coordinate={{latitude: 30.289997, longitude: -97.740532}}>
             <Image 
               source={require('../../assets/images/pfp_drishti.png')}
-              style={{ width: 50, height: 50 }} 
+              style={styles.pfpIcon} 
             />
           </Marker>
 
@@ -254,7 +277,7 @@ export default function HomeScreen() {
             coordinate={{latitude: 30.28417, longitude: -97.73783}}>
             <Image 
               source={require('../../assets/images/pfp_venkat.png')}
-              style={{ width: 50, height: 50 }} 
+              style={styles.pfpIcon} 
             />
           </Marker>
 
@@ -263,21 +286,29 @@ export default function HomeScreen() {
             coordinate={{latitude: 30.28876, longitude: -97.73758}}>
             <Image 
               source={require('../../assets/images/pfp_ishita.png')}
-              style={{ width: 50, height: 50 }} 
+              style={styles.pfpIcon} 
             />
           </Marker>
 
 
-           
-
-            {/* Study Space Markers from Firestore */}
-          {studySpaceMarkers.map((space) => (
+          {/* Study Space Markers from Firestore */}
+          {studySpaces.map((space) => (
             <Marker
-              key={space.id}
-              coordinate={space.coordinate}
+              key={space.spaceId}
+              coordinate={ { latitude: space.location[0], longitude: space.location[1]} }
               title={space.name}
               description={space.address}
+              // image={require('../../assets/images/pin.png')}
+              onPress={() => bringSpaceToTop(space.spaceId)}
             >
+              <Image
+                source={require('../../assets/images/pin.png')}
+                style={{
+                  width: zoomLevel * 2, // scale as desired
+                  height: zoomLevel * 2,
+                  resizeMode: 'contain',
+                }}
+              />
               <Callout>
                 <View style={styles.callout}>
                   <Text style={styles.calloutTitle}>{space.name}</Text>
@@ -309,43 +340,6 @@ export default function HomeScreen() {
                   space={space}
                 />
               ))}
-
-
-              {/* <SmallCard
-                name="PCL"
-                todayHrs="24/7"
-                distance={0.6}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/pcl.jpg"
-                features="something"
-              />
-              <SmallCard
-                name="Welch"
-                todayHrs="8 AM-4:30 PM"
-                distance={0.2}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/welch.png"
-                features="something"
-              />
-              <SmallCard
-                name="Gates Dell Complex"
-                todayHrs="24/7"
-                distance={0.1}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/gdc.png"
-                features="something"
-              />
-              <SmallCard
-                name="NRG Productivity Center"
-                todayHrs="9 AM-5 PM"
-                distance={0.4}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/nrg.jpg"
-                features="something"
-              />
-              <SmallCard
-                name="Moody (DMC)"
-                todayHrs="7 AM-11 PM"
-                distance={0.8}
-                imagePath="gs://studymap-5c5ae.firebasestorage.app/moody.png"
-                features="something"
-              /> */}
             </ScrollView>
           </BottomSheetView>
         </BottomSheet>
@@ -387,6 +381,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   callout: {
+    minWidth: 180,
     paddingHorizontal: 10,
     paddingVertical: 5,
     maxWidth: 200,
@@ -402,8 +397,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
     padding: 8,
-    marginBottom: 130,
+    marginBottom: 90,
   },
+  pfpIcon: {
+    width: 40,
+    height: 40,
+  }
 
   
 });

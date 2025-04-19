@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { storage } from '@/backend/firebaseConfig';
 import { ref, getDownloadURL } from 'firebase/storage';
+import { getSavedStudySpaces } from "@/backend/backendFunctions";
 
 type FeatureRatings = {
   aesthetics: {
@@ -77,7 +78,7 @@ const SmallCard: React.FC<SmallCardProps> = ({ space }) => {
             {/* Left Section*/}
             <View style={styles.leftcontainer}>
                 <Text style={styles.text}>{space.hours}</Text>
-                <Text style={styles.text}>1 mi</Text>
+                {/* <Text style={styles.text}>1 mi</Text> */}
                 <Image style={styles.image} source={{ uri: space.images[0] }} />
             </View> 
 
@@ -160,18 +161,20 @@ const styles = StyleSheet.create({
     },
 
     leftcontainer: {
-      width: "35%",
+      width: "40%",
       flexDirection: "column",
       margin: 5,
     },
     name: {
-      fontSize: 24,
+      paddingLeft: 4,
+      fontSize: 22,
       fontWeight: 'bold',
       color: "#DC8B47",
     },
     text: {
-      fontSize: 16,
+      fontSize: 14,
       color: "#062F48",
+      marginBottom: 2,
     },
 
     rightcontainer: {
@@ -190,7 +193,7 @@ const styles = StyleSheet.create({
 
     image: {
       width: "100%",
-      height: 100,
+      height: 110,
       borderRadius: 10,
       marginTop: 5,
     },

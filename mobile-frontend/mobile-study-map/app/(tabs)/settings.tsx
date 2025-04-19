@@ -59,7 +59,7 @@ export default function SettingsScreen() {
       </TouchableOpacity>
 
       {/* Button going to study log */}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={styles.settingsButton}
         onPress={() => router.push('/studylog')}
       >
@@ -70,7 +70,7 @@ export default function SettingsScreen() {
             style={styles.arrowIcon} 
           />
         </View>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Button going to following */}
       <TouchableOpacity 
