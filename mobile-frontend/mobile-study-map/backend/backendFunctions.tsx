@@ -290,11 +290,23 @@ export const getUserSessions = async (userId) => {
 };
 
 // Get a specific session
-export const getSession = async (sessionId) => {
+export const getSession = async (sessionId): Promise<SessionData | null> => {
   try {
     const sessionDoc = await getDoc(doc(db, "sessions", sessionId));
     if (sessionDoc.exists()) {
-      return { id: sessionDoc.id, ...sessionDoc.data() };
+      const data = sessionDoc.data();
+      // Defensive: ensure all required fields exist
+      return {
+        id: sessionDoc.id,
+        description: data.description || '',
+        sessionType: data.sessionType || '',
+        spaceId: data.spaceId || '',
+        userId: data.userId || '',
+        users: data.users || [],
+        isActive: typeof data.isActive === 'boolean' ? data.isActive : true,
+        startTime: data.startTime ? new Date(data.startTime) : new Date(),
+        endTime: data.endTime ? new Date(data.endTime) : null
+      };
     } else {
       console.error("Session not found");
       return null;
@@ -339,13 +351,38 @@ export const updateSession = async (sessionId, sessionData) => {
 };
 
 // End a session
-export const endSession = async (sessionId: string): Promise<boolean> => {
+export const endSession = async (sessionId: string, userId?: string): Promise<boolean> => {
   try {
     const sessionRef = doc(db, 'sessions', sessionId);
-    await updateDoc(sessionRef, {
-      isActive: false,
-      endTime: new Date()
-    });
+    const sessionDoc = await getDoc(sessionRef);
+    if (!sessionDoc.exists()) {
+      throw new Error('Session not found');
+    }
+    const sessionData = sessionDoc.data();
+    let updatedUsers = sessionData.users;
+    let updatedPastUsers = sessionData.pastUsers || [];
+    if (userId) {
+      // Remove from users, add to pastUsers if not already there
+      updatedUsers = sessionData.users.filter((id: string) => id !== userId);
+      if (!updatedPastUsers.includes(userId)) {
+        updatedPastUsers = [...updatedPastUsers, userId];
+      }
+    }
+    if (updatedUsers.length === 0) {
+      // If no users left, fully end the session
+      await updateDoc(sessionRef, {
+        isActive: false,
+        endTime: new Date(),
+        users: updatedUsers,
+        pastUsers: updatedPastUsers
+      });
+    } else {
+      // Otherwise just remove the user
+      await updateDoc(sessionRef, {
+        users: updatedUsers,
+        pastUsers: updatedPastUsers
+      });
+    }
     return true;
   } catch (error) {
     console.error('Error ending session:', error);
@@ -409,6 +446,11 @@ export const getUserActiveSession = async (userId: string): Promise<SessionData 
 // Join a session
 export const joinSession = async (sessionId: string, userId: string): Promise<boolean> => {
   try {
+    // Defensive: never allow empty userId
+    if (!userId || userId === "") {
+      console.error("joinSession called with empty userId", userId);
+      throw new Error("No valid user ID provided to joinSession");
+    }
     // Check if user is already in an active session
     const activeSession = await getUserActiveSession(userId);
     if (activeSession) {

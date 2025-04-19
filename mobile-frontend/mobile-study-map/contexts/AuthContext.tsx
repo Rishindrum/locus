@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
         password
       );
       if (userCredential.user) {
-        console.log("We reached here somehow",userCredential.user);
+        // console.log("We reached here somehow",userCredential.user);
         setUser(userCredential.user);
         return { success: true };
       }

@@ -7,6 +7,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import SmallCard from '../../components/SmallCard';
 import LargeCard from '../../components/LargeCard';
 import SearchWithFilter from '@/components/SearchWithFilter';
+import UserSessionPopup from '../../components/UserSessionPopup';
 
 // For geolocation
 import * as Location from 'expo-location';
@@ -18,7 +19,8 @@ import { SearchBar } from 'react-native-elements';
 
 // For backend
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext'; // Importing the AuthContext for authentication
+import { getUserActiveSession } from '@/backend/backendFunctions';
+import { useSession } from '@/contexts/SessionContext';
 import { getAllStudySpaces, getStudySpace } from '@/backend/backendFunctions';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/backend/firebaseConfig';
@@ -32,12 +34,12 @@ interface LocationData {
 }
 
 interface AuthContextType {
-  user: { uid: string; displayName: string } | null;
+  user: { uid: string; name: string } | null;
 }
 
 interface UserLocation {
   userId: string;
-  displayName: string;
+  name: string;
   location: {
     latitude: number;
     longitude: number;
@@ -88,17 +90,16 @@ type StudySpace = {
   images?: string[];
 };
 
-
-
-
 export default function HomeScreen() {
-
   const router = useRouter();
-  const {user} = useAuth(); // Get the current user from AuthContext
+  const { user } = useAuth(); // Get the current user from AuthContext
   const { userLocations, startLocationSharing } = useLocation();
+  const { sessionId, joinSession, startTime } = useSession();
   const [region, setRegion] = useState<Region | null>(null);
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
   const mapRef = useRef<MapView>(null);
+  const [popupUser, setPopupUser] = useState<{ userId: string; name: string } | null>(null);
+  const [joinedSessionStart, setJoinedSessionStart] = useState<string | null>(null);
 
   useEffect(() => {
     // Start sharing location when component mounts
@@ -138,21 +139,32 @@ export default function HomeScreen() {
     getCurrentLocation();
   }, []);
 
-
   // FUNCTIONS FOR SCROLLABLE VIEW
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['20%', '40%', '90%'], []);
 
-
   const handleSheetChanges = useCallback((index: number) => {
     console.log('handleSheetChanges', index);
   }, []);
 
-
   // FUNCTIONS FOR CURRENT LOCATION, SPACES LOCATIONS
   // const [currentLocation, setCurrentLocation] = useState({ latitude: 30.28626, longitude: -97.73937 });
   const [studySpaces, setStudySpaces] = useState<StudySpace[]>([]);
+
+  // Fetch and display the study space markers
+  useEffect(() => {
+    const fetchStudySpaces = async () => {
+      try {
+        const spaces = await getAllStudySpaces();
+        setStudySpaces(spaces);
+      } catch (error) {
+        console.error('Error fetching study spaces:', error);
+      }
+    };
+
+    fetchStudySpaces();
+  }, []);
 
 
   useEffect(() => {
@@ -186,6 +198,22 @@ export default function HomeScreen() {
   // SEARCH BAR
   const [search, setSearch] = useState('');
 
+  // Handler for marker tap
+  const handleUserMarkerPress = (userLocation: UserLocation) => {
+    setPopupUser({ userId: userLocation.userId, name: userLocation.name });
+  };
+
+  // Handler for joining session from popup
+  const handleJoinSession = async (
+    newSessionId: string,
+    sessionStart: string,
+    sessionType: string,
+    sessionDescription: string
+  ) => {
+    await joinSession(newSessionId, sessionType, sessionDescription, sessionStart);
+    setJoinedSessionStart(sessionStart);
+  };
+
 
   const [zoomLevel, setZoomLevel] = useState(15); // default
 
@@ -206,33 +234,32 @@ export default function HomeScreen() {
   };
   
   return (
-      <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
+      {/* SEARCH BAR */}
+      <SearchWithFilter></SearchWithFilter>
 
-        {/* SEARCH BAR */}
-        <SearchWithFilter></SearchWithFilter>
-
-        {/* Map */}
-        {region && (
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            initialRegion={region}
-            showsUserLocation={false}
-            showsMyLocationButton={false}
-          >
-            {/* Current Location Marker */}
-            {currentLocation && (
-              <Marker
-                coordinate={{
-                  latitude: currentLocation.latitude,
-                  longitude: currentLocation.longitude,
-                }}
-              >
-                <View style={styles.currentLocationMarker}>
-                  <Text style={styles.currentLocationText}>Me</Text>
-                </View>
-              </Marker>
-            )}
+      {/* Map */}
+      {region && (
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={region}
+          showsUserLocation={false}
+          showsMyLocationButton={false}
+        >
+          {/* Current Location Marker */}
+          {currentLocation && (
+            <Marker
+              coordinate={{
+                latitude: currentLocation.latitude,
+                longitude: currentLocation.longitude,
+              }}
+            >
+              <View style={styles.currentLocationMarker}>
+                <Text style={styles.currentLocationText}>Me</Text>
+              </View>
+            </Marker>
+          )}
 
           {/* Location - Vaishnuv */}
           <Marker
@@ -297,41 +324,50 @@ export default function HomeScreen() {
             />
           </Marker>
 
-            {/* Followed Users */}
-            {userLocations.map((userLocation) => {
-              if (!userLocation.location) return null;
+          {/* Followed Users */}
+          {userLocations.map((userLocation) => {
+            if (!userLocation.location) return null;
 
-              const isInactive = Date.now() - userLocation.location.timestamp > 30 * 60 * 1000; // 30 minutes
-              const markerStyle = {
-                ...styles.markerContainer,
-                backgroundColor: isInactive ? '#808080' : '#DC8B47',
-              };
+            const isInactive = Date.now() - userLocation.location.timestamp > 30 * 60 * 1000; // 30 minutes
+            const markerStyle = {
+              ...styles.markerContainer,
+              backgroundColor: isInactive ? '#808080' : '#DC8B47',
+            };
 
-              return (
-                <Marker
-                  key={userLocation.userId}
-                  coordinate={{
-                    latitude: userLocation.location.latitude,
-                    longitude: userLocation.location.longitude,
-                  }}
-                >
-                  <View style={markerStyle}>
-                    <Text style={styles.markerText}>
-                      {userLocation.displayName.split(' ').map(part => part[0]).join('').toUpperCase()}
+            // Show stopwatch if joined this session
+            const showStopwatch = popupUser && popupUser.userId === userLocation.userId && sessionId && joinedSessionStart;
+
+            return (
+              <Marker
+                key={userLocation.userId}
+                coordinate={{
+                  latitude: userLocation.location.latitude,
+                  longitude: userLocation.location.longitude,
+                }}
+                onPress={() => handleUserMarkerPress(userLocation)}
+              >
+                <View style={markerStyle}>
+                  <Text style={styles.markerText}>
+                    {userLocation.name.split(' ').map((part) => part[0]).join('').toUpperCase()}
+                  </Text>
+                </View>
+                <Callout>
+                  <View style={styles.callout}>
+                    <Text style={styles.calloutText}>{userLocation.name}</Text>
+                    <Text style={styles.calloutSubtext}>
+                      {isInactive ? 'Inactive - ' : ''}
+                      Last seen: {new Date(userLocation.location.timestamp).toLocaleTimeString()}
                     </Text>
-                  </View>
-                  <Callout>
-                    <View style={styles.callout}>
-                      <Text style={styles.calloutText}>{userLocation.displayName}</Text>
-                      <Text style={styles.calloutSubtext}>
-                        {isInactive ? 'Inactive - ' : ''}
-                        Last seen: {new Date(userLocation.location.timestamp).toLocaleTimeString()}
+                    {showStopwatch && (
+                      <Text style={{ color: '#DC8B47', fontWeight: 'bold', marginTop: 8 }}>
+                        Stopwatch: {Math.floor((Date.now() - new Date(joinedSessionStart!).getTime()) / 1000)}s
                       </Text>
-                    </View>
-                  </Callout>
-                </Marker>
-              );
-            })}
+                    )}
+                  </View>
+                </Callout>
+              </Marker>
+            );
+          })}
 
           {/* Study Space Markers from Firestore */}
           {studySpaces.map((space) => (
@@ -359,37 +395,47 @@ export default function HomeScreen() {
               </Callout>
             </Marker>
           ))}
-
           </MapView>
         )}
 
-        {/* List of Study Space Small Cards */}
-        <BottomSheet
-          ref={bottomSheetRef}
-          index={1}
-          snapPoints={snapPoints}
-          backgroundStyle={{
-            backgroundColor: 'rgba(255, 255, 255, 0.9)', // slightly transparent white
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-          }}
-        >
-          <BottomSheetView style={styles.scrollContent}>
-            <ScrollView>
-              {studySpaces.map((space) => (
-                <SmallCard
-                  key={space.id}
-                  space={{
-                    ...space,
-                    images: space.images || []
-                  }}
-                />
-              ))}
-            </ScrollView>
-          </BottomSheetView>
-        </BottomSheet>
 
-      </View>
+      {/* List of Study Space Small Cards */}
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={1}
+        snapPoints={snapPoints}
+        backgroundStyle={{
+          backgroundColor: 'rgba(255, 255, 255, 0.9)', // slightly transparent white
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}
+      >
+        <BottomSheetView style={styles.scrollContent}>
+          <ScrollView>
+            {studySpaces.map((space) => (
+              <SmallCard
+                key={space.id}
+                space={{
+                  ...space,
+                  images: space.images || [],
+                }}
+              />
+            ))}
+          </ScrollView>
+        </BottomSheetView>
+      </BottomSheet>
+
+      {/* Popup for joining a followed user's session */}
+      {popupUser && (
+        <UserSessionPopup
+          userId={popupUser.userId}
+          userName={popupUser.name}
+          onClose={() => setPopupUser(null)}
+          onJoin={handleJoinSession}
+          currentSessionId={sessionId}
+        />
+      )}
+    </View>
   );
 }
 
@@ -412,8 +458,8 @@ const styles = StyleSheet.create({
   },
 
   cardContainer: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
     padding: 16,
     gap: 12,
   },
@@ -422,28 +468,19 @@ const styles = StyleSheet.create({
   generalMap: {
     flex: 1,
   },
-  container: {
-    flex: 1,
-  },
-  callout: {
-    minWidth: 180,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    maxWidth: 200,
-  },
   calloutTitle: {
     fontWeight: 'bold',
     marginBottom: 5,
   },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  scrollContent: {
-    flex: 1,
-    padding: 8,
-    marginBottom: 90,
-  },
+  // map: {
+  //   width: '100%',
+  //   height: '100%',
+  // },
+  // scrollContent: {
+  //   flex: 1,
+  //   padding: 8,
+  //   marginBottom: 90,
+  // },
   pfpIcon: {
     width: 40,
     height: 40,
@@ -470,7 +507,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
-  
+  container: {
+    flex: 1,
+  },
+  callout: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    maxWidth: 200,
+  },
+  map: {
+    flex: 1,
+  },
+  scrollContent: {
+    flex: 1,
+    padding: 8,
+    marginBottom: 130,
+  },
   currentLocationMarker: {
     backgroundColor: '#DC8B47',
     borderRadius: 20,
