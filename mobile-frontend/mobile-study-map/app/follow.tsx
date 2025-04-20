@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Image, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchAllUsersExceptCurrent, getUserProfile, toggleFollowUser } from '@/backend/backendFunctions';
 import ActiveFollowerSessions from '../components/ActiveFollowerSessions';
 import { router } from 'expo-router';
-
 
 export default function FollowScreen() {
   const { user } = useAuth(); // Get the current authenticated user
   const [users, setUsers] = useState([]);
   const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   // Fetch all users and the current user's following list on mount
   useEffect(() => {
@@ -34,6 +34,15 @@ export default function FollowScreen() {
 
     fetchData();
   }, [user]);
+
+  // Filter users based on search query (name or email)
+  const filteredUsers = users.filter(user => {
+    const query = search.toLowerCase();
+    return (
+      user.name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query)
+    );
+  });
 
   // Handle follow/unfollow actions
   const handleFollowToggle = async (targetUserId: string) => {
@@ -70,25 +79,41 @@ export default function FollowScreen() {
   return (
     <View style={styles.container}>
 
-
       {/* Container for the title and back arrow */}
       <View style={styles.titleContainer}>
-          <TouchableOpacity onPress={() => router.back()}>
-              <Image
-                  source={require('../assets/images/arrow_back.png')}
-                  style={styles.arrowIcon} 
-              />
-          </TouchableOpacity>
-          <Text style={styles.titleText}>Find People to Follow</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Image
+            source={require('../assets/images/arrow_back.png')}
+            style={styles.arrowIcon} 
+          />
+        </TouchableOpacity>
+        <Text style={styles.titleText}>Find People to Follow</Text>
       </View>
 
+      {/* Search Bar */}
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Search by name or email..."
+        value={search}
+        onChangeText={setSearch}
+        placeholderTextColor="#aaa"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
 
       <FlatList
-        data={users}
+        data={filteredUsers}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.userItem}>
-            <Text style={styles.userName}>{item.name}</Text>
+            <Image
+              source={item.pfp ? { uri: item.pfp } : require('../assets/images/pfp_drishti.png')}
+              style={styles.userPfp}
+            />
+            <View style={styles.userInfoContainer}>
+              <Text style={styles.userName}>{item.name}</Text>
+              <Text style={styles.userEmail}>{item.email}</Text>
+            </View>
             <TouchableOpacity
               style={[
                 styles.followButton,
@@ -104,7 +129,6 @@ export default function FollowScreen() {
         )}
         ListEmptyComponent={<Text style={styles.emptyText}>No other users found</Text>}
       />
-      <ActiveFollowerSessions />
 
     </View>
   );
@@ -119,7 +143,6 @@ const styles = StyleSheet.create({
   },
   userItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
     marginVertical: 4,
@@ -129,10 +152,28 @@ const styles = StyleSheet.create({
     borderColor: "#DC8B47",
     elevation: 2,
   },
+  userPfp: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 14,
+    backgroundColor: '#eee',
+  },
+  userInfoContainer: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
   userName: {
     fontSize: 16,
     fontWeight: '500',
     color: "#DC8B47",
+  },
+  userEmail: {
+    fontSize: 13,
+    color: '#888',
+    marginTop: 2,
   },
   followButton: {
     paddingVertical: 8,
@@ -170,5 +211,15 @@ const styles = StyleSheet.create({
     height: 30,
     marginRight: 20,
   },
-
+  searchBar: {
+    width: '100%',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#DC8B47',
+    color: '#333',
+  },
 });

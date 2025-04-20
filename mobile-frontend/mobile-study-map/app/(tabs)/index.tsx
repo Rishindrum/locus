@@ -1,4 +1,4 @@
-import { Text, ScrollView, Image, StyleSheet, FlatList, Platform, Dimensions, View, TouchableOpacity } from 'react-native';
+import { Text, ScrollView, Image, StyleSheet, FlatList, Platform, Dimensions, View, TouchableOpacity, Animated } from 'react-native';
 import React, { useRef, useMemo, useEffect, useState, useCallback } from 'react';
 
 // For scrolling view of small cards
@@ -102,6 +102,8 @@ export default function HomeScreen() {
   const mapRef = useRef<MapView>(null);
   const [popupUser, setPopupUser] = useState<{ userId: string; name: string } | null>(null);
   const [joinedSessionStart, setJoinedSessionStart] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const glowAnim = useState(new Animated.Value(0.7));
 
   useEffect(() => {
     // Start sharing location when component mounts
@@ -235,6 +237,47 @@ export default function HomeScreen() {
     });
   };
   
+  const getGlowStyle = (userLocation, currentUser, selectedUserId, glowOpacity) => {
+    // Defensive: ensure glowOpacity is a number between 0.15 and 0.7
+    const op = typeof glowOpacity === 'number' && !isNaN(glowOpacity) ? Math.max(0.15, Math.min(0.7, glowOpacity)) : 0.5;
+    // Current user marker
+    if (userLocation.userId === currentUser?.uid) {
+      return [styles.glowSelf, { shadowOpacity: op, borderColor: `rgba(100,180,255,${op})`, shadowColor: `rgba(100,180,255,${op})` }];
+    }
+    // Inactive friend
+    if (!userLocation.sessionActive && (!userLocation.sessionType || userLocation.sessionType === null)) {
+      const isInactive = !userLocation.location || (Date.now() - userLocation.location.timestamp > 30 * 60 * 1000);
+      if (isInactive) return [styles.glowInactive, { shadowOpacity: op, borderColor: `rgba(176,176,176,${op})`, shadowColor: `rgba(176,176,176,${op})` }];
+      return [styles.glowNoSession, { shadowOpacity: op, borderColor: `rgba(220,139,71,${op})`, shadowColor: `rgba(220,139,71,${op})` }];
+    }
+    if (userLocation.sessionActive) {
+      if (userLocation.sessionType === 'collaborative') return [styles.glowCollaborative, { shadowOpacity: op, borderColor: `rgba(75,228,123,${op})`, shadowColor: `rgba(75,228,123,${op})` }];
+      if (userLocation.sessionType === 'quiet') return [styles.glowQuiet, { shadowOpacity: op, borderColor: `rgba(255,224,102,${op})`, shadowColor: `rgba(255,224,102,${op})` }];
+      if (userLocation.sessionType === 'individual') return [styles.glowIndividual, { shadowOpacity: op, borderColor: `rgba(255,75,75,${op})`, shadowColor: `rgba(255,75,75,${op})` }];
+      // Defensive fallback for unknown sessionType
+      return [styles.glowCollaborative, { shadowOpacity: op, borderColor: `rgba(75,228,123,${op})`, shadowColor: `rgba(75,228,123,${op})` }];
+    }
+    // Fallback: orange
+    return [styles.glowNoSession, { shadowOpacity: op, borderColor: `rgba(220,139,71,${op})`, shadowColor: `rgba(220,139,71,${op})` }];
+  };
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim[0], {
+          toValue: 0.15,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnim[0], {
+          toValue: 0.7,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+  }, []);
+
   return (
     <View style={{ flex: 1 }}>
       {/* SEARCH BAR */}
@@ -250,16 +293,27 @@ export default function HomeScreen() {
           showsMyLocationButton={false}
         >
           {/* Current Location Marker */}
-          {currentLocation && (
+          {currentLocation && user && (
             <Marker
               coordinate={{
                 latitude: currentLocation.latitude,
                 longitude: currentLocation.longitude,
               }}
             >
-              <View style={styles.currentLocationMarker}>
-                <Text style={styles.currentLocationText}>Me</Text>
-              </View>
+              <Animated.View style={[styles.markerProfilePicWrapper, ...getGlowStyle({ userId: user.uid }, user, selectedUserId, glowAnim[0]), styles.glowThick, selectedUserId === user.uid && styles.glowSelected]}>
+                {user.pfp ? (
+                  <Image
+                    source={{ uri: user.pfp }}
+                    style={[styles.markerProfilePic, selectedUserId === user.uid && styles.markerProfilePicLarge]}
+                  />
+                ) : (
+                  <View style={[styles.markerContainer, selectedUserId === user.uid && styles.markerProfilePicLarge]}>
+                    <Text style={styles.markerText}>
+                      {user.name ? user.name.split(' ').map((part) => part[0]).join('').toUpperCase() : 'ME'}
+                    </Text>
+                  </View>
+                )}
+              </Animated.View>
             </Marker>
           )}
 
@@ -330,14 +384,17 @@ export default function HomeScreen() {
           {userLocations.map((userLocation) => {
             if (!userLocation.location) return null;
 
-            const isInactive = Date.now() - userLocation.location.timestamp > 30 * 60 * 1000; // 30 minutes
-            const markerStyle = {
-              ...styles.markerContainer,
-              backgroundColor: isInactive ? '#808080' : '#DC8B47',
-            };
-
-            // Show stopwatch if joined this session
-            const showStopwatch = popupUser && popupUser.userId === userLocation.userId && sessionId && joinedSessionStart;
+            // --- GLOW LOGIC ---
+            const glowStyle = [
+              ...getGlowStyle(userLocation, user, selectedUserId, glowAnim[0]),
+              styles.glowThick,
+              selectedUserId === userLocation.userId && styles.glowSelected,
+              // Debug: border for visual confirmation
+              { borderStyle: 'solid' },
+            ];
+            const isSelected = selectedUserId === userLocation.userId;
+            // Debug: log computed style
+            console.log('Marker', userLocation.name, glowStyle);
 
             return (
               <Marker
@@ -346,34 +403,22 @@ export default function HomeScreen() {
                   latitude: userLocation.location.latitude,
                   longitude: userLocation.location.longitude,
                 }}
-                onPress={() => handleUserMarkerPress(userLocation)}
+                onPress={() => setSelectedUserId(userLocation.userId)}
               >
-                {userLocation.pfp ? (
-                  <Image
-                    source={{ uri: userLocation.pfp }}
-                    style={styles.markerProfilePic}
-                  />
-                ) : (
-                  <View style={markerStyle}>
-                    <Text style={styles.markerText}>
-                      {userLocation.name.split(' ').map((part) => part[0]).join('').toUpperCase()}
-                    </Text>
-                  </View>
-                )}
-                <Callout>
-                  <View style={styles.callout}>
-                    <Text style={styles.calloutText}>{userLocation.name}</Text>
-                    <Text style={styles.calloutSubtext}>
-                      {isInactive ? 'Inactive - ' : ''}
-                      Last seen: {new Date(userLocation.location.timestamp).toLocaleTimeString()}
-                    </Text>
-                    {showStopwatch && (
-                      <Text style={{ color: '#DC8B47', fontWeight: 'bold', marginTop: 8 }}>
-                        Stopwatch: {Math.floor((Date.now() - new Date(joinedSessionStart!).getTime()) / 1000)}s
+                <Animated.View style={[styles.markerProfilePicWrapper, ...glowStyle]}>
+                  {userLocation.pfp ? (
+                    <Image
+                      source={{ uri: userLocation.pfp }}
+                      style={[styles.markerProfilePic, isSelected && styles.markerProfilePicLarge]}
+                    />
+                  ) : (
+                    <View style={[styles.markerContainer, isSelected && styles.markerProfilePicLarge]}>
+                      <Text style={styles.markerText}>
+                        {userLocation.name.split(' ').map((part) => part[0]).join('').toUpperCase()}
                       </Text>
-                    )}
-                  </View>
-                </Callout>
+                    </View>
+                  )}
+                </Animated.View>
               </Marker>
             );
           })}
@@ -434,14 +479,14 @@ export default function HomeScreen() {
         </BottomSheetView>
       </BottomSheet>
 
-      {/* Popup for joining a followed user's session */}
-      {popupUser && (
+      {/* Session Popup for selected user */}
+      {selectedUserId && (
         <UserSessionPopup
-          userId={popupUser.userId}
-          userName={popupUser.name}
-          onClose={() => setPopupUser(null)}
+          userId={selectedUserId}
+          userName={userLocations.find(u => u.userId === selectedUserId)?.name || ''}
+          onClose={() => setSelectedUserId(null)}
           onJoin={handleJoinSession}
-          currentSessionId={sessionId}
+          currentSessionId={joinedSessionStart}
         />
       )}
     </View>
@@ -553,5 +598,71 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
     resizeMode: 'cover',
     alignSelf: 'center',
+  },
+  markerProfilePicLarge: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+  },
+  markerProfilePicWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 24,
+    padding: 2,
+  },
+  glowSelf: {
+    shadowColor: 'rgba(100, 180, 255, 0.7)', // light blue, transparent
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 18,
+    borderColor: 'rgba(100, 180, 255, 0.7)',
+    borderWidth: 6,
+  },
+  glowInactive: {
+    shadowColor: 'rgba(176, 176, 176, 0.5)', // gray, transparent
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    borderColor: 'rgba(176, 176, 176, 0.5)',
+    borderWidth: 6,
+  },
+  glowNoSession: {
+    shadowColor: 'rgba(220, 139, 71, 0.5)', // orange, transparent
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    borderColor: 'rgba(220, 139, 71, 0.5)',
+    borderWidth: 6,
+  },
+  glowIndividual: {
+    shadowColor: 'rgba(255, 75, 75, 0.55)', // reddish, transparent
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 18,
+    borderColor: 'rgba(255, 75, 75, 0.55)',
+    borderWidth: 6,
+  },
+  glowQuiet: {
+    shadowColor: 'rgba(255, 224, 102, 0.55)', // yellow, transparent
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 18,
+    borderColor: 'rgba(255, 224, 102, 0.55)',
+    borderWidth: 6,
+  },
+  glowCollaborative: {
+    shadowColor: 'rgba(75, 228, 123, 0.55)', // green, transparent
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 18,
+    borderColor: 'rgba(75, 228, 123, 0.55)',
+    borderWidth: 6,
+  },
+  glowThick: {
+    borderWidth: 8,
+  },
+  glowSelected: {
+    borderWidth: 12,
+    shadowRadius: 28,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Image } from 'react-native';
 import { getUserActiveSession, joinSession } from '@/backend/backendFunctions';
 import { useSession } from '@/contexts/SessionContext';
 import Stopwatch from './Stopwatch';
@@ -107,6 +107,32 @@ export default function UserSessionPopup({ userId, userName, onClose, onJoin, cu
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   }
 
+  // Helper to render session user avatars
+  const renderSessionAvatars = (users: any[]) => {
+    if (!Array.isArray(users) || users.length === 0) return null;
+    const maxToShow = 4;
+    const shownUsers = users.slice(0, maxToShow);
+    const extraCount = users.length - maxToShow;
+    return (
+      <View style={styles.avatarsRow}>
+        {shownUsers.map((u, idx) => (
+          u.pfp ? (
+            <Image key={u.id || u.uid || idx} source={{ uri: u.pfp }} style={styles.avatarImg} />
+          ) : (
+            <View key={u.id || u.uid || idx} style={[styles.avatarImg, styles.avatarFallback]}>
+              <Text style={styles.avatarFallbackText}>{u.name ? u.name[0].toUpperCase() : '?'}</Text>
+            </View>
+          )
+        ))}
+        {extraCount > 0 && (
+          <View style={[styles.avatarImg, styles.avatarExtra]}>
+            <Text style={styles.avatarExtraText}>{`+${extraCount}`}</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.overlay}>
       <View style={styles.popup}>
@@ -130,6 +156,8 @@ export default function UserSessionPopup({ userId, userName, onClose, onJoin, cu
                 <Text style={styles.joinButtonText}>{joining ? 'Joining...' : 'Join Session'}</Text>
               </TouchableOpacity>
             )}
+            {/* Session avatars */}
+            {renderSessionAvatars(session.users)}
           </>
         ) : (
           <Text style={styles.noSessionText}>No active session</Text>
@@ -264,6 +292,42 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#062F48',
+    fontSize: 16,
+  },
+  avatarsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+    gap: 4,
+  },
+  avatarImg: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#eee',
+    marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: '#DC8B47',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarFallback: {
+    backgroundColor: '#DC8B47',
+  },
+  avatarFallbackText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  avatarExtra: {
+    backgroundColor: '#aaa',
+  },
+  avatarExtraText: {
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 16,
   },
 });

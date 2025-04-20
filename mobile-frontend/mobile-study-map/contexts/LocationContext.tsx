@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
 import { doc, updateDoc, onSnapshot, collection, getDoc } from 'firebase/firestore';
 import { db } from '../backend/firebaseConfig';
 import { useAuth } from './AuthContext';
-import { getUserProfile } from '../backend/backendFunctions'; // Assuming this function is defined elsewhere
+import { getUserProfile, getUserActiveSession } from '../backend/backendFunctions'; // Assuming this function is defined elsewhere
 
 interface LocationData {
   latitude: number;
@@ -17,6 +17,8 @@ interface UserLocation {
   name: string;
   location: LocationData | null;
   pfp?: string | null;
+  sessionType?: string | null; // collaborative, quiet, individual, or null
+  sessionActive?: boolean; // true if in session, false if not
 }
 
 interface LocationContextType {
@@ -112,12 +114,24 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Listen to each followed user's location in real time
+        // Listen to each followed user's location and session in real time
         const newUnsubscribes = following.map((followedUserId) => {
           const userRef = doc(db, 'users', followedUserId);
-          return onSnapshot(userRef, (userSnap) => {
+          return onSnapshot(userRef, async (userSnap) => {
             const userData = userSnap.data();
             if (!userData) return;
+            // Fetch session info
+            let sessionType = null;
+            let sessionActive = false;
+            try {
+              const session = await getUserActiveSession(followedUserId);
+              if (session && session.isActive) {
+                sessionType = session.sessionType;
+                sessionActive = true;
+              }
+            } catch (e) {
+              // ignore
+            }
             setUserLocations((prev) => {
               // Remove any previous entry for this user
               const filtered = prev.filter(u => u.userId !== followedUserId);
@@ -128,6 +142,8 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
                   name: userData.name || 'Unknown',
                   location: userData.location || null,
                   pfp: userData.pfp || null,
+                  sessionType,
+                  sessionActive,
                 }
               ];
             });

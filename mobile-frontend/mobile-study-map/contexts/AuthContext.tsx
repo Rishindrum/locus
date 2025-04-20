@@ -31,8 +31,31 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(fbUser => {
-      setUser(fbUser || null);
+    const unsubscribe = auth.onAuthStateChanged(async fbUser => {
+      if (fbUser) {
+        // Try to get pfp from Firestore
+        try {
+          const userDoc = await getDoc(doc(db, 'users', fbUser.uid));
+          let pfp = null;
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            pfp = userData.pfp || null;
+          }
+          setUser({
+            ...fbUser,
+            name: fbUser.displayName || fbUser.email?.split('@')[0] || '',
+            pfp,
+          });
+        } catch (e) {
+          setUser({
+            ...fbUser,
+            name: fbUser.displayName || fbUser.email?.split('@')[0] || '',
+            pfp: null,
+          });
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
     return unsubscribe;
