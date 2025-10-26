@@ -1,6 +1,4 @@
-# study-map
-
-## TPEO CAVA New-Fellow Project
+# Locus
 ### Canva Presentation
 https://www.canva.com/design/DAGdzxadOfc/qGi2b4ae7GjYlP7jSRpD8Q/edit?utm_content=DAGdzxadOfc&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
 
